@@ -74,7 +74,7 @@ class SmartBatchResize:
     RETURN_NAMES = ("images", "filenames", "output_paths", "count")
     OUTPUT_IS_LIST = (True, True, True, False)
     FUNCTION = "run"
-    CATEGORY = "SmartResize"
+    CATEGORY = "Craftopia"
     OUTPUT_NODE = True
 
     def run(self, input_folder, max_pixels, filename_suffix,

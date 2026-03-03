@@ -31,7 +31,7 @@ class SmartSizeMultiplier:
     RETURN_TYPES = ("INT", "INT", "INT")
     RETURN_NAMES = ("width", "height", "resolution")
     FUNCTION = "run"
-    CATEGORY = "SmartResize"
+    CATEGORY = "Craftopia"
 
     def run(self, image, multiplier, multiple_of):
         h, w = image.shape[1], image.shape[2]
