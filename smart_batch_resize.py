@@ -30,10 +30,6 @@ def _calc_new_size(w, h, max_pixels, multiple_of):
 
 
 class SmartBatchResize:
-    """
-    Load all images from a folder, resize by longest side, save with suffix.
-    Original filenames preserved. Output subfolder auto-created.
-    """
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -51,25 +47,25 @@ class SmartBatchResize:
                 "delimiter": ("STRING", {
                     "default": "_",
                     "multiline": False,
-                    "tooltip": "Separator between name and pixel value when auto-naming. E.g. _ or -"
+                    "tooltip": "Separator used when auto-naming. E.g. _ or -"
                 }),
                 "filename_suffix": ("STRING", {
-                    "default": "_Small",
+                    "default": "",
                     "multiline": False,
-                    "tooltip": "Appended to each output filename. Ignored when auto_suffix_from_pixels is enabled."
+                    "tooltip": "Appended to filename. When auto_suffix_from_pixels is on, pixel value is added after this."
                 }),
                 "auto_suffix_from_pixels": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "When enabled, suffix is automatically set to {delimiter}{max_pixels}. E.g. _512"
+                    "tooltip": "Appends {delimiter}{max_pixels} to filename_suffix. E.g. dog_512 or _512 if suffix is empty."
                 }),
                 "output_subfolder": ("STRING", {
-                    "default": "resized",
+                    "default": "",
                     "multiline": False,
-                    "tooltip": "Subfolder created inside input_folder. Ignored when auto_folder_from_pixels is enabled."
+                    "tooltip": "Subfolder for output. Leave empty for 'resized'. When auto_folder_from_pixels is on, pixel value is added after this."
                 }),
                 "auto_folder_from_pixels": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "When enabled, subfolder is automatically set to resized{delimiter}{max_pixels}. E.g. resized_512"
+                    "tooltip": "Appends {delimiter}{max_pixels} to subfolder name. E.g. cat_512 or just 512 if subfolder is empty."
                 }),
                 "multiple_of": ("INT", {
                     "default": 8, "min": 1, "max": 64, "step": 1,
@@ -94,11 +90,19 @@ class SmartBatchResize:
             auto_suffix_from_pixels, output_subfolder, auto_folder_from_pixels,
             multiple_of, interpolation, skip_if_exists):
 
-        # Auto-generate suffix and subfolder from max_pixels if enabled
+        # Resolve filename suffix
         if auto_suffix_from_pixels:
-            filename_suffix = f"{delimiter}{max_pixels}"
-        if auto_folder_from_pixels:
-            output_subfolder = f"resized{delimiter}{max_pixels}"
+            filename_suffix = f"{filename_suffix}{delimiter}{max_pixels}"
+
+        # Resolve output subfolder
+        if output_subfolder.strip() == "":
+            if auto_folder_from_pixels:
+                output_subfolder = str(max_pixels)
+            else:
+                output_subfolder = "resized"
+        else:
+            if auto_folder_from_pixels:
+                output_subfolder = f"{output_subfolder}{delimiter}{max_pixels}"
 
         input_folder = input_folder.strip()
         if not os.path.isdir(input_folder):
