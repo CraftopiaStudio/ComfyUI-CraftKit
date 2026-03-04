@@ -56,36 +56,36 @@ class SmartBatchResize:
                 }),
                 
                 # OUTPUT NAMING
-                "add_resolution_suffix": ("BOOLEAN", {
+                "suffix_resolution": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Automatically append resolution to filename. E.g. image_1024.png"
+                    "tooltip": "Append resolution to filename. E.g. image_1024.png"
                 }),
-                "custom_suffix": ("STRING", {
+                "suffix_custom": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom text to append before resolution. Only used when add_resolution_suffix is on."
-                }),
-                "delimiter": ("STRING", {
-                    "default": "_",
-                    "multiline": False,
-                    "tooltip": "Separator between filename parts. E.g. _ or -"
+                    "tooltip": "Custom text to add before resolution. Only used when suffix_resolution is on."
                 }),
                 
                 # OUTPUT LOCATION
-                "create_resolution_folder": ("BOOLEAN", {
+                "folder_resolution": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "Create subfolder with resolution in name. E.g. resized_1024"
+                    "tooltip": "Append resolution to subfolder name. E.g. resized_1024"
                 }),
-                "output_subfolder": ("STRING", {
+                "folder_custom": ("STRING", {
                     "default": "resized",
                     "multiline": False,
-                    "tooltip": "Subfolder name for output. Resolution is appended if create_resolution_folder is on."
+                    "tooltip": "Subfolder name. Resolution is appended if folder_resolution is on."
                 }),
                 
                 # OPTIONS
                 "skip_if_exists": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "Skip files that already exist in the output folder."
+                }),
+                "delimiter": ("STRING", {
+                    "default": "_",
+                    "multiline": False,
+                    "tooltip": "Separator between filename and folder parts. E.g. _ or -"
                 }),
             }
         }
@@ -98,12 +98,13 @@ class SmartBatchResize:
     OUTPUT_NODE = True
 
     def run(self, input_folder, max_pixels, multiple_of, interpolation,
-            add_resolution_suffix, custom_suffix, delimiter,
-            create_resolution_folder, output_subfolder, skip_if_exists):
+            suffix_resolution, suffix_custom,
+            folder_resolution, folder_custom,
+            skip_if_exists, delimiter):
 
         # Resolve filename suffix
-        suffix_raw = custom_suffix.strip()
-        if add_resolution_suffix:
+        suffix_raw = suffix_custom.strip()
+        if suffix_resolution:
             if suffix_raw == "":
                 suffix_raw = f"{delimiter}{max_pixels}"
             else:
@@ -116,12 +117,16 @@ class SmartBatchResize:
             filename_suffix = suffix_raw
 
         # Resolve output subfolder
-        subfolder = output_subfolder.strip()
+        subfolder = folder_custom.strip()
+        
         if subfolder == "":
-            subfolder = "resized"
-            
-        if create_resolution_folder:
-            subfolder = f"{subfolder}{delimiter}{max_pixels}"
+            if folder_resolution:
+                subfolder = str(max_pixels)  # Only resolution
+            else:
+                subfolder = "resized"  # Fallback
+        else:
+            if folder_resolution:
+                subfolder = f"{subfolder}{delimiter}{max_pixels}"
 
         input_folder = input_folder.strip()
         if not os.path.isdir(input_folder):
