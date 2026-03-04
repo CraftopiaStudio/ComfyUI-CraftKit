@@ -35,45 +35,56 @@ class SmartBatchResize:
     def INPUT_TYPES(cls):
         return {
             "required": {
+                # INPUT
                 "input_folder": ("STRING", {
-                    "default": "D:/images/input",
+                    "default": "",
                     "multiline": False,
                     "tooltip": "Folder containing images to resize."
                 }),
+                
+                # RESIZE SETTINGS
                 "max_pixels": ("INT", {
-                    "default": 1536, "min": 64, "max": 8192, "step": 8,
+                    "default": 1024, "min": 64, "max": 8192, "step": 64,
                     "tooltip": "Longest side target in pixels. Aspect ratio is always preserved."
+                }),
+                "multiple_of": ("INT", {
+                    "default": 8, "min": 1, "max": 128, "step": 1,
+                    "tooltip": "Snap both dimensions to a multiple of this value. Use 8 for SD/Flux."
+                }),
+                "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"], {
+                    "default": "lanczos"
+                }),
+                
+                # OUTPUT NAMING
+                "add_resolution_suffix": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Automatically append resolution to filename. E.g. image_1024.png"
+                }),
+                "custom_suffix": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom text to append before resolution. Only used when add_resolution_suffix is on."
                 }),
                 "delimiter": ("STRING", {
                     "default": "_",
                     "multiline": False,
-                    "tooltip": "Separator used when auto-naming. E.g. _ or -"
+                    "tooltip": "Separator between filename parts. E.g. _ or -"
                 }),
-                "filename_suffix": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "tooltip": "Appended to filename. When auto_suffix_from_pixels is on, pixel value is added after this."
-                }),
-                "auto_suffix_from_pixels": ("BOOLEAN", {
+                
+                # OUTPUT LOCATION
+                "create_resolution_folder": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "Appends {delimiter}{max_pixels} to filename_suffix. E.g. dog_512 or _512 if suffix is empty."
+                    "tooltip": "Create subfolder with resolution in name. E.g. resized_1024"
                 }),
                 "output_subfolder": ("STRING", {
-                    "default": "",
+                    "default": "resized",
                     "multiline": False,
-                    "tooltip": "Subfolder for output. Leave empty for 'resized'. When auto_folder_from_pixels is on, pixel value is added after this."
+                    "tooltip": "Subfolder name for output. Resolution is appended if create_resolution_folder is on."
                 }),
-                "auto_folder_from_pixels": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Appends {delimiter}{max_pixels} to subfolder name. E.g. cat_512 or just 512 if subfolder is empty."
-                }),
-                "multiple_of": ("INT", {
-                    "default": 8, "min": 1, "max": 64, "step": 1,
-                    "tooltip": "Snap both dimensions to a multiple of this value. Use 8 for SD/Flux."
-                }),
-                "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"],),
+                
+                # OPTIONS
                 "skip_if_exists": ("BOOLEAN", {
-                    "default": False,
+                    "default": True,
                     "tooltip": "Skip files that already exist in the output folder."
                 }),
             }
@@ -86,35 +97,31 @@ class SmartBatchResize:
     CATEGORY = "Craftopia"
     OUTPUT_NODE = True
 
-    def run(self, input_folder, max_pixels, delimiter, filename_suffix,
-            auto_suffix_from_pixels, output_subfolder, auto_folder_from_pixels,
-            multiple_of, interpolation, skip_if_exists):
+    def run(self, input_folder, max_pixels, multiple_of, interpolation,
+            add_resolution_suffix, custom_suffix, delimiter,
+            create_resolution_folder, output_subfolder, skip_if_exists):
 
         # Resolve filename suffix
-        # Ensure delimiter is added before a custom suffix when provided.
-        suffix_raw = filename_suffix.strip()
-        if auto_suffix_from_pixels:
+        suffix_raw = custom_suffix.strip()
+        if add_resolution_suffix:
             if suffix_raw == "":
                 suffix_raw = f"{delimiter}{max_pixels}"
             else:
                 suffix_raw = f"{suffix_raw}{delimiter}{max_pixels}"
 
-        # If there's any suffix and it doesn't already start with the delimiter,
-        # prepend the delimiter so the output becomes e.g. "name_delimcustom.ext".
+        # Ensure delimiter is prepended if there's a suffix
         if suffix_raw != "" and not suffix_raw.startswith(delimiter):
             filename_suffix = f"{delimiter}{suffix_raw}"
         else:
             filename_suffix = suffix_raw
 
         # Resolve output subfolder
-        if output_subfolder.strip() == "":
-            if auto_folder_from_pixels:
-                output_subfolder = str(max_pixels)
-            else:
-                output_subfolder = "resized"
-        else:
-            if auto_folder_from_pixels:
-                output_subfolder = f"{output_subfolder}{delimiter}{max_pixels}"
+        subfolder = output_subfolder.strip()
+        if subfolder == "":
+            subfolder = "resized"
+            
+        if create_resolution_folder:
+            subfolder = f"{subfolder}{delimiter}{max_pixels}"
 
         input_folder = input_folder.strip()
         if not os.path.isdir(input_folder):
@@ -128,7 +135,7 @@ class SmartBatchResize:
         if not files:
             raise ValueError(f"[SmartBatchResize] No images found in: {input_folder}")
 
-        out_dir = Path(input_folder) / output_subfolder
+        out_dir = Path(input_folder) / subfolder
         out_dir.mkdir(parents=True, exist_ok=True)
 
         interp = INTERP_MAP[interpolation]
