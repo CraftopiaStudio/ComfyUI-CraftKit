@@ -48,15 +48,28 @@ class SmartBatchResize:
                     "default": 1536, "min": 64, "max": 8192, "step": 8,
                     "tooltip": "Longest side target in pixels. Aspect ratio is always preserved."
                 }),
+                "delimiter": ("STRING", {
+                    "default": "_",
+                    "multiline": False,
+                    "tooltip": "Separator between name and pixel value when auto-naming. E.g. _ or -"
+                }),
                 "filename_suffix": ("STRING", {
                     "default": "_Small",
                     "multiline": False,
-                    "tooltip": "Appended to each output filename before the extension."
+                    "tooltip": "Appended to each output filename. Ignored when auto_suffix_from_pixels is enabled."
+                }),
+                "auto_suffix_from_pixels": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "When enabled, suffix is automatically set to {delimiter}{max_pixels}. E.g. _512"
                 }),
                 "output_subfolder": ("STRING", {
                     "default": "resized",
                     "multiline": False,
-                    "tooltip": "Subfolder created inside input_folder for output files."
+                    "tooltip": "Subfolder created inside input_folder. Ignored when auto_folder_from_pixels is enabled."
+                }),
+                "auto_folder_from_pixels": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "When enabled, subfolder is automatically set to resized{delimiter}{max_pixels}. E.g. resized_512"
                 }),
                 "multiple_of": ("INT", {
                     "default": 8, "min": 1, "max": 64, "step": 1,
@@ -77,8 +90,15 @@ class SmartBatchResize:
     CATEGORY = "Craftopia"
     OUTPUT_NODE = True
 
-    def run(self, input_folder, max_pixels, filename_suffix,
-            output_subfolder, multiple_of, interpolation, skip_if_exists):
+    def run(self, input_folder, max_pixels, delimiter, filename_suffix,
+            auto_suffix_from_pixels, output_subfolder, auto_folder_from_pixels,
+            multiple_of, interpolation, skip_if_exists):
+
+        # Auto-generate suffix and subfolder from max_pixels if enabled
+        if auto_suffix_from_pixels:
+            filename_suffix = f"{delimiter}{max_pixels}"
+        if auto_folder_from_pixels:
+            output_subfolder = f"resized{delimiter}{max_pixels}"
 
         input_folder = input_folder.strip()
         if not os.path.isdir(input_folder):
