@@ -91,8 +91,20 @@ class SmartBatchResize:
             multiple_of, interpolation, skip_if_exists):
 
         # Resolve filename suffix
+        # Ensure delimiter is added before a custom suffix when provided.
+        suffix_raw = filename_suffix.strip()
         if auto_suffix_from_pixels:
-            filename_suffix = f"{filename_suffix}{delimiter}{max_pixels}"
+            if suffix_raw == "":
+                suffix_raw = f"{delimiter}{max_pixels}"
+            else:
+                suffix_raw = f"{suffix_raw}{delimiter}{max_pixels}"
+
+        # If there's any suffix and it doesn't already start with the delimiter,
+        # prepend the delimiter so the output becomes e.g. "name_delimcustom.ext".
+        if suffix_raw != "" and not suffix_raw.startswith(delimiter):
+            filename_suffix = f"{delimiter}{suffix_raw}"
+        else:
+            filename_suffix = suffix_raw
 
         # Resolve output subfolder
         if output_subfolder.strip() == "":
