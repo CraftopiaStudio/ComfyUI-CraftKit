@@ -1,12 +1,33 @@
-# ComfyUI-SmartResize
+# ComfyUI-Craftopia
 
-Smart image resize nodes for ComfyUI — batch processing, LoRA prep & SeedVR support.
+Custom nodes for ComfyUI — image resizing, dataset prep & prompt automation for LoRA training workflows.
 
 All nodes appear under the **Craftopia** category in the node menu.
 
 ---
 
 ## Nodes
+
+### 🎛️ Smart Prompt Controller
+Cycle through up to 4 prompt lists using a single incrementing counter. Counts lines automatically, selects the right prompt, and outputs which list is active — ideal for driving Switch nodes that control aspect ratio, latent size, or other per-category settings.
+
+**Typical usecases:**
+- LoRA dataset generation with multiple pose categories (headshots, halfbody, fullbody, tall portrait), each with their own prompt list and aspect ratio
+- Any batch workflow where you need to rotate through different prompt sets and switch settings per set
+
+| Input | Type | Description |
+|---|---|---|
+| counter | INT | Auto-incrementing counter (1-indexed) |
+| prompt_list_1 | STRING | First prompt list — one prompt per line (forceInput) |
+| prompt_list_2 | STRING | Second prompt list (optional, forceInput) |
+| prompt_list_3 | STRING | Third prompt list (optional, forceInput) |
+| prompt_list_4 | STRING | Fourth prompt list (optional, forceInput) |
+
+**Outputs:** `prompt` (selected line as STRING), `list_index` (active list number as INT → feed to Switch nodes)
+
+The node displays a status label showing the current position: `List 1 — 4/5 | total: 8`
+
+---
 
 ### 📐 Smart Resize
 Resize any image (or batch) so the **longest side** equals `max_pixels`, with aspect ratio preserved.
@@ -72,20 +93,22 @@ Also useful for LoRA dataset prep — using mixed resolutions in your training s
 - `JWImageResizeByLongerSide` (comfyui-various) has no Lanczos in the official release
 - No existing node combines batch folder loading + longest-side resize + original filename preservation
 - No existing node outputs a ready-to-use `resolution` INT for SeedVR
+- No existing node cycles through multiple prompt lists with automatic list switching and counter
 
 ---
 
 ## Installation
 
-**ComfyUI Manager:** search for `ComfyUI-SmartResize` and install.
+**ComfyUI Manager:** search for `ComfyUI-Craftopia` and install.
 
 **Manual:**
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/CraftopiaStudio/ComfyUI-SmartResize
+git clone https://github.com/CraftopiaStudio/ComfyUI-Craftopia
 ```
 Restart ComfyUI. All nodes appear under **Craftopia** in the node menu:
 
+- `Craftopia` → **Smart Prompt Controller 🎛️**
 - `Craftopia` → **Smart Resize 📐**
 - `Craftopia` → **Smart Batch Resize 📁**
 - `Craftopia` → **Smart Size Multiplier 📏**
