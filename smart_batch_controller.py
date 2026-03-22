@@ -2,7 +2,7 @@ class SmartBatchController:
     """
     Craftopia — Smart Batch Controller 🎛️
     Drives batch switching and prompt index from a single incrementing counter.
-    Replaces SELECT BATCH + WELKE REGEL + Math Expression + Math Int.
+    Accepts up to 4 prompt lists as STRING inputs and counts lines automatically.
     """
 
     @classmethod
@@ -17,10 +17,12 @@ class SmartBatchController:
                     "display": "number",
                     "control_after_generate": "increment",
                 }),
-                "batch_1_total": ("INT", {"default": 5,  "min": 0, "max": 999, "step": 1, "display": "number"}),
-                "batch_2_total": ("INT", {"default": 8,  "min": 0, "max": 999, "step": 1, "display": "number"}),
-                "batch_3_total": ("INT", {"default": 0,  "min": 0, "max": 999, "step": 1, "display": "number"}),
-                "batch_4_total": ("INT", {"default": 0,  "min": 0, "max": 999, "step": 1, "display": "number"}),
+            },
+            "optional": {
+                "batch_1": ("STRING", {"forceInput": True}),
+                "batch_2": ("STRING", {"forceInput": True}),
+                "batch_3": ("STRING", {"forceInput": True}),
+                "batch_4": ("STRING", {"forceInput": True}),
             }
         }
 
@@ -30,11 +32,22 @@ class SmartBatchController:
     CATEGORY = "Craftopia"
     OUTPUT_NODE = True
 
-    def control(self, counter, batch_1_total, batch_2_total, batch_3_total, batch_4_total):
-        totals = [batch_1_total, batch_2_total, batch_3_total, batch_4_total]
+    def _count_lines(self, text):
+        """Count non-empty lines in a prompt list string."""
+        if not text:
+            return 0
+        return len([l for l in text.splitlines() if l.strip()])
 
-        # Filter out empty batches
-        active = [(i, t) for i, t in enumerate(totals) if t > 0]
+    def control(self, counter, batch_1=None, batch_2=None, batch_3=None, batch_4=None):
+        raw = [batch_1, batch_2, batch_3, batch_4]
+
+        # Build active batch list: (original_index, line_count)
+        active = []
+        for i, text in enumerate(raw):
+            count = self._count_lines(text)
+            if count > 0:
+                active.append((i, count))
+
         total_all = sum(t for _, t in active)
 
         if total_all == 0:
@@ -50,19 +63,17 @@ class SmartBatchController:
 
         for i, t in active:
             if position < cumulative + t:
-                batch_index = i          # 0-based → Switch select
+                batch_index = i
                 prompt_index = position - cumulative  # 0-based within batch
                 break
             cumulative += t
 
-        # UI label: "B2 — 3 / 8"
+        # UI label on node: "B2 — 3 / 7"
         batch_number = batch_index + 1
-        batch_total = totals[batch_index]
+        batch_total = self._count_lines(raw[batch_index])
         prompt_display = prompt_index + 1  # 1-based for display
-        label = f"B{batch_number}  —  {prompt_display} / {batch_total}"
+        label = f"B{batch_number}  —  {prompt_display} / {batch_total}  |  total: {total_all}"
 
-        # prompt_index +1 because Pose node select is 0-based but we subtract 1 via Math Int
-        # Actually return 0-based so user can connect directly to Pose select
         return {"ui": {"text": [label]}, "result": (batch_index, prompt_index, total_all)}
 
 
