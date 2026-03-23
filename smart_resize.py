@@ -11,12 +11,12 @@ INTERP_MAP = {
 }
 
 
-def _calc_new_size(w, h, max_pixels, multiple_of, upscale_if_smaller):
+def _calc_new_size(w, h, longest_side, multiple_of, upscale_if_smaller):
     longest = max(w, h)
-    if longest <= max_pixels and not upscale_if_smaller:
+    if longest <= longest_side and not upscale_if_smaller:
         new_w, new_h = w, h
     else:
-        scale = max_pixels / longest
+        scale = longest_side / longest
         new_w = int(w * scale)
         new_h = int(h * scale)
     if multiple_of > 1:
@@ -36,7 +36,7 @@ class SmartResize:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "max_pixels": ("INT", {
+                "longest_side": ("INT", {
                     "default": 1536, "min": 64, "max": 8192, "step": 8,
                     "tooltip": "Longest side target in pixels. Aspect ratio is always preserved."
                 }),
@@ -47,7 +47,7 @@ class SmartResize:
                 "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"],),
                 "upscale_if_smaller": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "Upscale images that are already smaller than max_pixels."
+                    "tooltip": "Upscale images that are already smaller than longest_side."
                 }),
             }
         }
@@ -57,7 +57,7 @@ class SmartResize:
     FUNCTION = "run"
     CATEGORY = "Craftopia"
 
-    def run(self, image, max_pixels, multiple_of, interpolation, upscale_if_smaller):
+    def run(self, image, longest_side, multiple_of, interpolation, upscale_if_smaller):
         interp = INTERP_MAP[interpolation]
         results = []
         last_w, last_h = 0, 0
@@ -65,7 +65,7 @@ class SmartResize:
         for i in range(image.shape[0]):
             frame = image[i]  # [H, W, C]
             h, w = frame.shape[0], frame.shape[1]
-            new_w, new_h = _calc_new_size(w, h, max_pixels, multiple_of, upscale_if_smaller)
+            new_w, new_h = _calc_new_size(w, h, longest_side, multiple_of, upscale_if_smaller)
 
             if new_w == w and new_h == h:
                 results.append(frame)

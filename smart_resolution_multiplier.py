@@ -1,4 +1,4 @@
-class SmartSizeMultiplier:
+class SmartResolutionMultiplier:
     """
     Multiplies image dimensions by a factor.
     Outputs width, height, and resolution (longest side) as INT.
@@ -44,9 +44,9 @@ class SmartSizeMultiplier:
             new_h = max(multiple_of, round(new_h / multiple_of) * multiple_of)
 
         resolution = max(new_w, new_h)
-        print(f"[SmartSizeMultiplier] {w}x{h} x {multiplier} -> {new_w}x{new_h} (resolution: {resolution})")
+        print(f"[SmartResolutionMultiplier] {w}x{h} x {multiplier} -> {new_w}x{new_h} (resolution: {resolution})")
         return (new_w, new_h, resolution)
 
 
-NODE_CLASS_MAPPINGS        = {"SmartSizeMultiplier": SmartSizeMultiplier}
-NODE_DISPLAY_NAME_MAPPINGS = {"SmartSizeMultiplier": "Smart Size Multiplier 📏"}
+NODE_CLASS_MAPPINGS        = {"SmartResolutionMultiplier": SmartResolutionMultiplier}
+NODE_DISPLAY_NAME_MAPPINGS = {"SmartResolutionMultiplier": "Smart Resolution Multiplier 📏"}

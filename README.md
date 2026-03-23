@@ -27,10 +27,12 @@ Cycle through up to 4 prompt lists using a single incrementing counter. Counts l
 
 The node displays a status label showing the current position: `List 1 — 4/5 | total: 8`
 
+<img src="assets/screenshot-smart-prompt-controller.png" width="700">
+
 ---
 
 ### 📐 Smart Resize
-Resize any image (or batch) so the **longest side** equals `max_pixels`, with aspect ratio preserved.
+Resize any image (or batch) so the **longest side** equals `longest_side`, with aspect ratio preserved.
 
 Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to disk.
 
@@ -42,12 +44,14 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 | Input | Type | Default | Description |
 |---|---|---|---|
 | image | IMAGE | — | Single image or batch |
-| max_pixels | INT | 1536 | Target size for longest side |
+| longest_side | INT | 1536 | Target size for longest side |
 | multiple_of | INT | 8 | Snap dimensions to this multiple (8 = SD/Flux compatible) |
 | interpolation | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
-| upscale_if_smaller | BOOLEAN | false | Also upscale images already smaller than max_pixels |
+| upscale_if_smaller | BOOLEAN | false | Also upscale images already smaller than longest_side |
 
 **Outputs:** `image`, `width`, `height`
+
+<img src="assets/screenshot-smart-resize.png" width="700">
 
 ---
 
@@ -59,7 +63,7 @@ Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a fol
 | Input | Type | Default | Description |
 |---|---|---|---|
 | input_folder | STRING | D:/images/input | Source folder path |
-| max_pixels | INT | 1536 | Target size for longest side |
+| longest_side | INT | 1536 | Target size for longest side |
 | filename_suffix | STRING | _Small | Appended to each output filename before the extension |
 | output_subfolder | STRING | resized | Subfolder created inside input_folder |
 | multiple_of | INT | 8 | Snap dimensions to this multiple |
@@ -70,12 +74,12 @@ Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a fol
 
 ---
 
-### 📏 Smart Size Multiplier
+### 📏 Smart Resolution Multiplier
 Multiply image dimensions by a factor and output the results as integers.
 
 SeedVR takes a single `resolution` INT (the longest side) — not a width and height separately. Standard math nodes give you a FLOAT or require multiple steps to get there. This node does it cleanly in one step: give it your image and a multiplier, and it outputs `width`, `height`, and `resolution` (longest side) ready to connect directly to SeedVR's `max_resolution` input.
 
-Also useful for LoRA dataset prep — using mixed resolutions in your training set generally produces better results than training on a single fixed size. Smart Size Multiplier makes it easy to dynamically calculate the right target size per image rather than hardcoding a value.
+Also useful for LoRA dataset prep — using mixed resolutions in your training set generally produces better results than training on a single fixed size. Smart Resolution Multiplier makes it easy to dynamically calculate the right target size per image rather than hardcoding a value.
 
 | Input | Type | Default | Description |
 |---|---|---|---|
@@ -84,6 +88,8 @@ Also useful for LoRA dataset prep — using mixed resolutions in your training s
 | multiple_of | INT | 8 | Snap dimensions to this multiple |
 
 **Outputs:** `width`, `height`, `resolution` (longest side as INT → directly into SeedVR)
+
+<img src="assets/screenshot-smart-resolution-multiplier.png" width="700">
 
 ---
 
@@ -111,7 +117,7 @@ Restart ComfyUI. All nodes appear under **Craftopia** in the node menu:
 - `Craftopia` → **Smart Prompt Controller 🎛️**
 - `Craftopia` → **Smart Resize 📐**
 - `Craftopia` → **Smart Batch Resize 📁**
-- `Craftopia` → **Smart Size Multiplier 📏**
+- `Craftopia` → **Smart Resolution Multiplier 📏**
 
 ---
 

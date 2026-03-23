@@ -15,12 +15,12 @@ INTERP_MAP = {
 SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 
 
-def _calc_new_size(w, h, max_pixels, multiple_of):
+def _calc_new_size(w, h, longest_side, multiple_of):
     longest = max(w, h)
-    if longest <= max_pixels:
+    if longest <= longest_side:
         new_w, new_h = w, h
     else:
-        scale = max_pixels / longest
+        scale = longest_side / longest
         new_w = int(w * scale)
         new_h = int(h * scale)
     if multiple_of > 1:
@@ -43,7 +43,7 @@ class SmartBatchResize:
                 }),
                 
                 # RESIZE SETTINGS
-                "max_pixels": ("INT", {
+                "longest_side": ("INT", {
                     "default": 1024, "min": 64, "max": 8192, "step": 64,
                     "tooltip": "Longest side target in pixels. Aspect ratio is always preserved."
                 }),
@@ -97,7 +97,7 @@ class SmartBatchResize:
     CATEGORY = "Craftopia"
     OUTPUT_NODE = True
 
-    def run(self, input_folder, max_pixels, multiple_of, interpolation,
+    def run(self, input_folder, longest_side, multiple_of, interpolation,
             suffix_resolution, suffix_custom,
             folder_resolution, folder_custom,
             skip_if_exists, delimiter):
@@ -106,9 +106,9 @@ class SmartBatchResize:
         suffix_raw = suffix_custom.strip()
         if suffix_resolution:
             if suffix_raw == "":
-                suffix_raw = f"{delimiter}{max_pixels}"
+                suffix_raw = f"{delimiter}{longest_side}"
             else:
-                suffix_raw = f"{suffix_raw}{delimiter}{max_pixels}"
+                suffix_raw = f"{suffix_raw}{delimiter}{longest_side}"
 
         # Ensure delimiter is prepended if there's a suffix
         if suffix_raw != "" and not suffix_raw.startswith(delimiter):
@@ -121,12 +121,12 @@ class SmartBatchResize:
         
         if subfolder == "":
             if folder_resolution:
-                subfolder = str(max_pixels)  # Only resolution
+                subfolder = str(longest_side)  # Only resolution
             else:
                 subfolder = "resized"  # Fallback
         else:
             if folder_resolution:
-                subfolder = f"{subfolder}{delimiter}{max_pixels}"
+                subfolder = f"{subfolder}{delimiter}{longest_side}"
 
         input_folder = input_folder.strip()
         if not os.path.isdir(input_folder):
@@ -156,7 +156,7 @@ class SmartBatchResize:
 
             img = PILImage.open(f).convert("RGB")
             w, h = img.size
-            new_w, new_h = _calc_new_size(w, h, max_pixels, multiple_of)
+            new_w, new_h = _calc_new_size(w, h, longest_side, multiple_of)
 
             img_resized = img.resize((new_w, new_h), interp)
 

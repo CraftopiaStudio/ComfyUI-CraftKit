@@ -2,7 +2,7 @@ WEB_DIRECTORY = "./js"
 
 from .smart_resize import NODE_CLASS_MAPPINGS as A, NODE_DISPLAY_NAME_MAPPINGS as A_NAMES
 from .smart_batch_resize import NODE_CLASS_MAPPINGS as B, NODE_DISPLAY_NAME_MAPPINGS as B_NAMES
-from .smart_size_multiplier import NODE_CLASS_MAPPINGS as C, NODE_DISPLAY_NAME_MAPPINGS as C_NAMES
+from .smart_resolution_multiplier import NODE_CLASS_MAPPINGS as C, NODE_DISPLAY_NAME_MAPPINGS as C_NAMES
 from .smart_prompt_controller import NODE_CLASS_MAPPINGS as D, NODE_DISPLAY_NAME_MAPPINGS as D_NAMES
 
 NODE_CLASS_MAPPINGS = {**A, **B, **C, **D}
