@@ -1,6 +1,6 @@
-# ComfyUI-Craftopia
+# ComfyUI-Craftoit
 
-Custom nodes for ComfyUI — image resizing, dataset prep & prompt automation for LoRA training workflows.
+Custom nodes for ComfyUI - image resizing, dataset prep & prompt automation for LoRA training workflows.
 
 All nodes appear under the **Craftopia** category in the node menu.
 
@@ -9,7 +9,7 @@ All nodes appear under the **Craftopia** category in the node menu.
 ## Nodes
 
 ### 🎛️ Smart Prompt Controller
-Cycle through up to 4 prompt lists using a single incrementing counter. Counts lines automatically, selects the right prompt, and outputs which list is active — ideal for driving Switch nodes that control aspect ratio, latent size, or other per-category settings.
+Cycle through up to 4 prompt lists using a single incrementing counter. Counts lines automatically, selects the right prompt, and outputs which list is active - ideal for driving Switch nodes that control aspect ratio, latent size, or other per-category settings.
 
 **Typical usecases:**
 - LoRA dataset generation with multiple pose categories (headshots, halfbody, fullbody, tall portrait), each with their own prompt list and aspect ratio
@@ -18,7 +18,7 @@ Cycle through up to 4 prompt lists using a single incrementing counter. Counts l
 | Input | Type | Description |
 |---|---|---|
 | counter | INT | Auto-incrementing counter (1-indexed) |
-| prompt_list_1 | STRING | First prompt list — one prompt per line (forceInput) |
+| prompt_list_1 | STRING | First prompt list - one prompt per line (forceInput) |
 | prompt_list_2 | STRING | Second prompt list (optional, forceInput) |
 | prompt_list_3 | STRING | Third prompt list (optional, forceInput) |
 | prompt_list_4 | STRING | Fourth prompt list (optional, forceInput) |
