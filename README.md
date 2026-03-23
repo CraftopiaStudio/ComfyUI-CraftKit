@@ -1,4 +1,4 @@
-# ComfyUI-Craftoit
+# ComfyUI-CraftKit
 
 Custom nodes for ComfyUI - image resizing, dataset prep & prompt automation for LoRA training workflows.
 
