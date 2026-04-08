@@ -29,7 +29,7 @@ class SmartPromptController:
     RETURN_TYPES = ("STRING", "INT")
     RETURN_NAMES = ("prompt", "list_index")
     FUNCTION = "control"
-    CATEGORY = "Craftopia"
+    CATEGORY = "CraftKit"
     OUTPUT_NODE = True
 
     def _get_lines(self, text):

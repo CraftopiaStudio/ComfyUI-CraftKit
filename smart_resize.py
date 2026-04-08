@@ -55,7 +55,7 @@ class SmartResize:
     RETURN_TYPES = ("IMAGE", "INT", "INT")
     RETURN_NAMES = ("image", "width", "height")
     FUNCTION = "run"
-    CATEGORY = "Craftopia"
+    CATEGORY = "CraftKit"
 
     def run(self, image, longest_side, multiple_of, interpolation, upscale_if_smaller):
         interp = INTERP_MAP[interpolation]
