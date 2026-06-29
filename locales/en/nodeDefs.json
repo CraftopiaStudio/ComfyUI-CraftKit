@@ -1,0 +1,63 @@
+{
+  "SmartBatchResize": {
+    "display_name": "Smart Batch Resize 📁",
+    "inputs": {
+      "input_folder": { "name": "Input folder" },
+      "longest_side": { "name": "Longest side (px)" },
+      "multiple_of": { "name": "Round to multiple of" },
+      "interpolation": { "name": "Interpolation method" },
+      "suffix_resolution": { "name": "Add resolution to filename" },
+      "suffix_custom": { "name": "Custom filename suffix" },
+      "folder_resolution": { "name": "Create resolution subfolder" },
+      "folder_custom": { "name": "Custom output subfolder" },
+      "skip_if_exists": { "name": "Skip existing files" },
+      "delimiter": { "name": "Filename delimiter" }
+    },
+    "outputs": {
+      "0": { "name": "Images" },
+      "1": { "name": "Count" }
+    }
+  },
+  "SmartResize": {
+    "display_name": "Smart Resize 📐",
+    "inputs": {
+      "image": { "name": "Image" },
+      "longest_side": { "name": "Longest side (px)" },
+      "multiple_of": { "name": "Round to multiple of" },
+      "interpolation": { "name": "Interpolation method" },
+      "upscale_if_smaller": { "name": "Upscale if smaller" }
+    },
+    "outputs": {
+      "0": { "name": "Image" },
+      "1": { "name": "Width" },
+      "2": { "name": "Height" }
+    }
+  },
+  "SmartResolutionMultiplier": {
+    "display_name": "Smart Resolution Multiplier 📏",
+    "inputs": {
+      "image": { "name": "Image" },
+      "multiplier": { "name": "Multiplier" },
+      "multiple_of": { "name": "Round to multiple of" }
+    },
+    "outputs": {
+      "0": { "name": "Width" },
+      "1": { "name": "Height" },
+      "2": { "name": "Resolution" }
+    }
+  },
+  "SmartPromptController": {
+    "display_name": "Smart Prompt Controller 🎛️",
+    "inputs": {
+      "counter": { "name": "Counter" },
+      "prompt_list_1": { "name": "Prompt list 1" },
+      "prompt_list_2": { "name": "Prompt list 2" },
+      "prompt_list_3": { "name": "Prompt list 3" },
+      "prompt_list_4": { "name": "Prompt list 4" }
+    },
+    "outputs": {
+      "0": { "name": "Prompt" },
+      "1": { "name": "List index" }
+    }
+  }
+}

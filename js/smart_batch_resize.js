@@ -20,10 +20,12 @@ app.registerExtension({
             } catch (e) {
                 console.error("[SmartBatchResize] Browse failed:", e);
             }
-        });
+        }, { serialize: false });
 
-        // Exclude button from serialization (saves undefined placeholder to keep index alignment)
-        btn.serializeValue = () => undefined;
+        // Fully exclude from serialization (both save AND load skip it) so it never
+        // shifts the index of the real widgets. serializeValue=()=>undefined did NOT
+        // do this — it left a placeholder on save but was skipped on load → drift.
+        btn.serialize = false;
 
         // Move Browse button to right after input_folder (index 1)
         const folderIdx = node.widgets.indexOf(folderWidget);
@@ -57,8 +59,8 @@ app.registerExtension({
                         return;
                     }
                 }
-            });
-            presetWidget.serializeValue = () => undefined;
+            }, { serialize: false });
+            presetWidget.serialize = false;
             presetWidget._rects = [];
 
             presetWidget.draw = function (ctx, node, widgetWidth, y, height) {

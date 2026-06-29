@@ -16,13 +16,14 @@ class SmartPromptController:
                     "step": 1,
                     "display": "number",
                     "control_after_generate": "increment",
+                    "tooltip": "Current position across all lists. Increments each run.",
                 }),
             },
             "optional": {
-                "prompt_list_1": ("STRING", {"forceInput": True}),
-                "prompt_list_2": ("STRING", {"forceInput": True}),
-                "prompt_list_3": ("STRING", {"forceInput": True}),
-                "prompt_list_4": ("STRING", {"forceInput": True}),
+                "prompt_list_1": ("STRING", {"forceInput": True, "tooltip": "Prompt list, one prompt per line."}),
+                "prompt_list_2": ("STRING", {"forceInput": True, "tooltip": "Optional second prompt list."}),
+                "prompt_list_3": ("STRING", {"forceInput": True, "tooltip": "Optional third prompt list."}),
+                "prompt_list_4": ("STRING", {"forceInput": True, "tooltip": "Optional fourth prompt list."}),
             }
         }
 

@@ -1,0 +1,95 @@
+{
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "SmartBatchResize",
+      "pos": [60, 80],
+      "size": [340, 366],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [1],
+          "slot_index": 0
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SmartBatchResize"
+      },
+      "widgets_values": [
+        "",
+        1024,
+        8,
+        "lanczos",
+        true,
+        "",
+        false,
+        "resized",
+        true,
+        "_"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "PreviewImage",
+      "pos": [460, 80],
+      "size": [320, 280],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "Note",
+      "pos": [460, 390],
+      "size": [320, 220],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": "Smart Batch Resize — outputs uitleg:\n\n📷 images  → PreviewImage of verder bewerken\n📝 filenames → bestandsnamen (zonder pad)\n📁 output_paths → volledige paden op schijf\n🔢 count → aantal verwerkte afbeeldingen\n\nDe node schrijft sowieso naar schijf.\nDe outputs zijn optioneel aan te sluiten."
+      },
+      "widgets_values": [
+        "Smart Batch Resize — outputs uitleg:\n\n📷 images  → PreviewImage of verder bewerken\n📝 filenames → bestandsnamen (zonder pad)\n📁 output_paths → volledige paden op schijf\n🔢 count → aantal verwerkte afbeeldingen\n\nDe node schrijft sowieso naar schijf.\nDe outputs zijn optioneel aan te sluiten."
+      ]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

@@ -44,10 +44,12 @@ class SmartResize:
                     "default": 8, "min": 1, "max": 64, "step": 1,
                     "tooltip": "Snap both dimensions to a multiple of this value. Use 8 for SD/Flux."
                 }),
-                "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"],),
+                "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"], {
+                    "tooltip": "Resampling method. Lanczos is sharpest for downscaling."
+                }),
                 "upscale_if_smaller": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "Upscale images that are already smaller than longest_side."
+                    "tooltip": "Also upscale images that are already smaller than the target longest side."
                 }),
             }
         }

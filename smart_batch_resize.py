@@ -52,7 +52,8 @@ class SmartBatchResize:
                     "tooltip": "Snap both dimensions to a multiple of this value. Use 8 for SD/Flux."
                 }),
                 "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"], {
-                    "default": "lanczos"
+                    "default": "lanczos",
+                    "tooltip": "Resampling method. Lanczos is sharpest for downscaling."
                 }),
 
                 # OUTPUT NAMING
@@ -63,7 +64,7 @@ class SmartBatchResize:
                 "suffix_custom": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom text to add before resolution. Only used when suffix_resolution is on."
+                    "tooltip": "Text added after the filename. E.g. photo → photo_headshot."
                 }),
 
                 # OUTPUT LOCATION
@@ -74,7 +75,7 @@ class SmartBatchResize:
                 "folder_custom": ("STRING", {
                     "default": "resized",
                     "multiline": False,
-                    "tooltip": "Subfolder name. Resolution is appended if folder_resolution is on."
+                    "tooltip": "Subfolder name. Resolution is appended if 'Create resolution subfolder' is on."
                 }),
 
                 # OPTIONS
@@ -90,9 +91,9 @@ class SmartBatchResize:
             }
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "INT")
-    RETURN_NAMES = ("images", "filenames", "output_paths", "count")
-    OUTPUT_IS_LIST = (True, True, True, False)
+    RETURN_TYPES = ("IMAGE", "INT")
+    RETURN_NAMES = ("images", "count")
+    OUTPUT_IS_LIST = (True, False)
     FUNCTION = "run"
     CATEGORY = "CraftKit"
     OUTPUT_NODE = True
@@ -144,7 +145,7 @@ class SmartBatchResize:
         out_dir.mkdir(parents=True, exist_ok=True)
 
         interp = INTERP_MAP[interpolation]
-        images_out, filenames_out, paths_out = [], [], []
+        images_out = []
 
         for f in files:
             out_name = f"{f.stem}{filename_suffix}{f.suffix.lower()}"
@@ -167,13 +168,11 @@ class SmartBatchResize:
 
             arr = np.array(img_resized).astype("float32") / 255.0
             images_out.append(torch.from_numpy(arr).unsqueeze(0))
-            filenames_out.append(out_name)
-            paths_out.append(str(out_path))
 
         if not images_out:
             raise ValueError("[SmartBatchResize] No images processed.")
 
-        return (images_out, filenames_out, paths_out, len(images_out))
+        return (images_out, len(images_out))
 
 
 NODE_CLASS_MAPPINGS        = {"SmartBatchResize": SmartBatchResize}
