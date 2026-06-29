@@ -41,7 +41,7 @@ class SmartBatchResize:
                     "multiline": False,
                     "tooltip": "Folder containing images to resize."
                 }),
-                
+
                 # RESIZE SETTINGS
                 "longest_side": ("INT", {
                     "default": 1024, "min": 64, "max": 8192, "step": 64,
@@ -54,7 +54,7 @@ class SmartBatchResize:
                 "interpolation": (["lanczos", "bicubic", "bilinear", "nearest"], {
                     "default": "lanczos"
                 }),
-                
+
                 # OUTPUT NAMING
                 "suffix_resolution": ("BOOLEAN", {
                     "default": True,
@@ -65,7 +65,7 @@ class SmartBatchResize:
                     "multiline": False,
                     "tooltip": "Custom text to add before resolution. Only used when suffix_resolution is on."
                 }),
-                
+
                 # OUTPUT LOCATION
                 "folder_resolution": ("BOOLEAN", {
                     "default": False,
@@ -76,7 +76,7 @@ class SmartBatchResize:
                     "multiline": False,
                     "tooltip": "Subfolder name. Resolution is appended if folder_resolution is on."
                 }),
-                
+
                 # OPTIONS
                 "skip_if_exists": ("BOOLEAN", {
                     "default": True,

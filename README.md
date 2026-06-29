@@ -60,6 +60,8 @@ Load **all images from a folder**, resize each one by longest side, and save wit
 
 Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images.
 
+Processes and saves directly to disk with the **original filename preserved**. The output folder is automatically named with the resolution (e.g. `resized_1024`) so you always know what's inside. Filenames are also passed as outputs so you can use them further in your pipeline.
+
 | Input | Type | Default | Description |
 |---|---|---|---|
 | input_folder | STRING | D:/images/input | Source folder path |
