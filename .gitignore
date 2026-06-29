@@ -1,3 +1,7 @@
+# Local Obsidian notes
+project-craftkit.md
+how-to-publish-comfyui-node.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -105,12 +105,12 @@ Also useful for LoRA dataset prep — using mixed resolutions in your training s
 
 ## Installation
 
-**ComfyUI Manager:** search for `ComfyUI-Craftopia` and install.
+**ComfyUI Manager:** search for `ComfyUI-CraftKit` and install.
 
 **Manual:**
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/CraftopiaStudio/ComfyUI-Craftopia
+git clone https://github.com/CraftopiaStudio/ComfyUI-CraftKit
 ```
 Restart ComfyUI. All nodes appear under **Craftopia** in the node menu:
 
