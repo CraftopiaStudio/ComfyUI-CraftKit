@@ -1,6 +1,6 @@
 class SmartPromptController:
     """
-    Craftopia — Smart Prompt Controller 🎛️
+    Craftopia — Smart Prompt Controller 📋
     Cycles through up to 4 prompt lists using a single incrementing counter.
     Counts lines automatically and outputs the selected prompt + list number.
     """
@@ -94,5 +94,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SmartPromptController": "Smart Prompt Controller \ud83c\udf9b\ufe0f",
+    "SmartPromptController": "Smart Prompt Controller \ud83d\udccb",
 }

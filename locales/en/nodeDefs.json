@@ -47,9 +47,9 @@
     }
   },
   "SmartPromptController": {
-    "display_name": "Smart Prompt Controller 🎛️",
+    "display_name": "Smart Prompt Controller 📋",
     "inputs": {
-      "counter": { "name": "Counter" },
+      "counter": { "name": "counter" },
       "prompt_list_1": { "name": "Prompt list 1" },
       "prompt_list_2": { "name": "Prompt list 2" },
       "prompt_list_3": { "name": "Prompt list 3" },

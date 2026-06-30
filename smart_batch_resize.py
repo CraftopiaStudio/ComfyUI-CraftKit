@@ -130,6 +130,8 @@ class SmartBatchResize:
                 subfolder = f"{subfolder}{delimiter}{longest_side}"
 
         input_folder = input_folder.strip()
+        if not input_folder:
+            raise ValueError("[SmartBatchResize] No folder selected. Enter a path or use the Browse button.")
         if not os.path.isdir(input_folder):
             raise ValueError(f"[SmartBatchResize] Folder not found: {input_folder}")
 

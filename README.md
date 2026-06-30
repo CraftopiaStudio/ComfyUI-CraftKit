@@ -2,13 +2,13 @@
 
 Custom nodes for ComfyUI - image resizing, dataset prep & prompt automation for LoRA training workflows.
 
-All nodes appear under the **Craftopia** category in the node menu.
+All nodes appear under the **CraftKit** category in the node menu.
 
 ---
 
 ## Nodes
 
-### 🎛️ Smart Prompt Controller
+### 📋 Smart Prompt Controller
 Cycle through up to 4 prompt lists using a single incrementing counter. Counts lines automatically, selects the right prompt, and outputs which list is active - ideal for driving Switch nodes that control aspect ratio, latent size, or other per-category settings.
 
 **Typical usecases:**
@@ -44,7 +44,7 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 | Input | Type | Default | Description |
 |---|---|---|---|
 | image | IMAGE | — | Single image or batch |
-| longest_side | INT | 1536 | Target size for longest side |
+| longest_side | INT | 1536 | Target size for longest side (quick presets: 512 / 768 / 1024 / 1536) |
 | multiple_of | INT | 8 | Snap dimensions to this multiple (8 = SD/Flux compatible) |
 | interpolation | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
 | upscale_if_smaller | BOOLEAN | false | Also upscale images already smaller than longest_side |
@@ -56,23 +56,28 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 ---
 
 ### 📁 Smart Batch Resize
-Load **all images from a folder**, resize each one by longest side, and save with the original filename + a suffix into a subfolder. Original filenames are always preserved.
+Load **all images from a folder**, resize each one by longest side, and save into a subfolder. Original filenames are always preserved — the node adds an optional suffix and/or resolution to the filename.
 
 Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images.
 
-Processes and saves directly to disk with the **original filename preserved**. The output folder is automatically named with the resolution (e.g. `resized_1024`) so you always know what's inside. Filenames are also passed as outputs so you can use them further in your pipeline.
+Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side.
 
 | Input | Type | Default | Description |
 |---|---|---|---|
-| input_folder | STRING | D:/images/input | Source folder path |
-| longest_side | INT | 1536 | Target size for longest side |
-| filename_suffix | STRING | _Small | Appended to each output filename before the extension |
-| output_subfolder | STRING | resized | Subfolder created inside input_folder |
+| input_folder | STRING | — | Source folder path (use Browse button or paste manually) |
+| longest_side | INT | 1024 | Target size for longest side |
 | multiple_of | INT | 8 | Snap dimensions to this multiple |
 | interpolation | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
-| skip_if_exists | BOOLEAN | false | Skip files that already exist in output |
+| suffix_resolution | BOOLEAN | true | Append resolution to filename — e.g. `photo_1024.png` |
+| suffix_custom | STRING | — | Custom text added after filename — e.g. `photo_headshot.png` |
+| folder_resolution | BOOLEAN | false | Append resolution to subfolder name — e.g. `resized_1024` |
+| folder_custom | STRING | resized | Subfolder name inside the input folder |
+| skip_if_exists | BOOLEAN | true | Skip files that already exist in the output folder |
+| delimiter | STRING | _ | Separator between filename parts |
 
-**Outputs:** `images` (list), `filenames` (list), `output_paths` (list), `count`
+**Outputs:** `images` (list), `count`
+
+<img src="assets/screenshot-smart-batch-resize.png" width="700">
 
 ---
 
@@ -114,12 +119,12 @@ Also useful for LoRA dataset prep — using mixed resolutions in your training s
 cd ComfyUI/custom_nodes
 git clone https://github.com/CraftopiaStudio/ComfyUI-CraftKit
 ```
-Restart ComfyUI. All nodes appear under **Craftopia** in the node menu:
+Restart ComfyUI. All nodes appear under **CraftKit** in the node menu:
 
-- `Craftopia` → **Smart Prompt Controller 🎛️**
-- `Craftopia` → **Smart Resize 📐**
-- `Craftopia` → **Smart Batch Resize 📁**
-- `Craftopia` → **Smart Resolution Multiplier 📏**
+- `CraftKit` → **Smart Prompt Controller 📋**
+- `CraftKit` → **Smart Resize 📐**
+- `CraftKit` → **Smart Batch Resize 📁**
+- `CraftKit` → **Smart Resolution Multiplier 📏**
 
 ---
 
