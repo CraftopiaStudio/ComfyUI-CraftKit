@@ -11,6 +11,9 @@ All nodes appear under the **CraftKit** category in the node menu.
 ## Nodes
 
 ### 📋 Smart Prompt Controller
+
+<img src="assets/screenshot-smart-prompt-controller.png" width="100%">
+
 Cycle through up to 4 prompt lists using a single incrementing index. Counts lines automatically, selects the right prompt, and outputs which list is active - ideal for driving Switch nodes that control aspect ratio, latent size, or other per-category settings.
 
 **Typical usecases:**
@@ -29,11 +32,12 @@ Cycle through up to 4 prompt lists using a single incrementing index. Counts lin
 
 The node displays a status label showing the current position: `List 1 — 4/5 | total: 8`
 
-<img src="assets/screenshot-smart-prompt-controller.png" width="700">
-
 ---
 
 ### 🧩 Smart Profile Switch
+
+<img src="assets/screenshot-smart-profile-switch.png" width="100%">
+
 Maps an active index (1–4) to a label, width, and height. Pairs directly with Smart Prompt Controller's `active_list` output to switch resolution and filename label per category in one node — no separate Aspect Ratio + Primitive + Switch combo needed.
 
 **Typical usecases:**
@@ -52,11 +56,12 @@ Maps an active index (1–4) to a label, width, and height. Pairs directly with 
 
 The node displays a status label showing the active slot: `Slot 2: Halfbody | 832 × 1216`
 
-<img src="assets/screenshot-smart-profile-switch.png" width="700">
-
 ---
 
 ### 📐 Smart Resize
+
+<img src="assets/screenshot-smart-resize.png" width="100%">
+
 Resize any image (or batch) so the **longest side** equals `longest_side`, with aspect ratio preserved.
 
 Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to disk.
@@ -69,28 +74,29 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 | Input | Type | Default | Description |
 |---|---|---|---|
 | Image | IMAGE | — | Single image or batch |
-| Longest side (px) | INT | 1536 | Target size for longest side (quick presets: 512 / 768 / 1024 / 1536) |
+| Longest side (px) | INT | 1536 | Target size for longest side. Quick presets: 512 / 768 / 1024 / 1536 — or type any custom value directly into the field |
 | Round to multiple of | INT | 8 | Snap dimensions to this multiple (8 = SD/Flux compatible) |
 | Interpolation method | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
 | Upscale if smaller | BOOLEAN | true | Upscale images smaller than longest_side. Turn off to only ever downscale, never upscale |
 
 **Outputs:** Image, Width, Height
 
-<img src="assets/screenshot-smart-resize.png" width="700">
-
 ---
 
 ### 📁 Smart Batch Resize
+
+<img src="assets/screenshot-smart-batch-resize.png" width="100%">
+
 Load **all images from a folder**, resize each one by longest side, and save into a subfolder. Build clean dataset filenames from a prefix, the original name, and/or a sequential counter — combined with an optional resolution suffix.
 
-Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images. The node always writes resized images to disk inside the input folder; connecting the outputs is optional.
+Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images. It works as a **standalone node**: it needs no upstream input and no downstream connection to do its job — drop it on the canvas, point it at a folder, hit **Run Batch**, and it reads, resizes, and saves everything itself. Connecting the `images`/`count` outputs is entirely optional, e.g. for previewing results.
 
-Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side.
+Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side — or type any custom value directly into the field.
 
 | Input | Type | Default | Description |
 |---|---|---|---|
 | Input folder | STRING | — | Source folder path (use Browse button or paste manually) |
-| Longest side (px) | INT | 1024 | Target size for longest side |
+| Longest side (px) | INT | 1024 | Target size for longest side. Quick presets: 512 / 768 / 1024 / 1536 — or type any custom value directly into the field |
 | Round to multiple of | INT | 8 | Snap dimensions to this multiple |
 | Interpolation method | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
 | Filename prefix | STRING | — | Label prepended to filename — e.g. `headshot` → `headshot_photo_001_1024.jpg` |
@@ -105,11 +111,12 @@ Includes a **Browse folder** button to pick the input folder directly from the n
 
 **Outputs:** Images (list), Count
 
-<img src="assets/screenshot-smart-batch-resize.png" width="700">
-
 ---
 
 ### 📏 Smart Resolution Multiplier
+
+<img src="assets/screenshot-smart-resolution-multiplier.png" width="100%">
+
 Multiply image dimensions by a factor and output the results as integers.
 
 SeedVR2 takes a single `resolution` INT (the longest side) — not a width and height separately. Standard math nodes give you a FLOAT or require multiple steps to get there. This node does it cleanly in one step: give it your image and a multiplier, and it outputs `width`, `height`, and `resolution` (longest side) ready to connect directly to SeedVR2's `resolution` input.
@@ -123,8 +130,6 @@ Also useful for LoRA dataset prep — using mixed resolutions in your training s
 | Round to multiple of | INT | 8 | Snap dimensions to this multiple |
 
 **Outputs:** Width, Height, Resolution (longest side as INT → directly into SeedVR2)
-
-<img src="assets/screenshot-smart-resolution-multiplier.png" width="700">
 
 ---
 
