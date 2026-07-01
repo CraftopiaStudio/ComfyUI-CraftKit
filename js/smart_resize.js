@@ -46,7 +46,7 @@ app.registerExtension({
 
             for (let i = 0; i < n; i++) {
                 const x = margin + i * (cellW + gap);
-                const active = current === PRESETS[i];
+                const active = Number(current) === PRESETS[i];
 
                 ctx.beginPath();
                 if (ctx.roundRect) ctx.roundRect(x, top, cellW, h, 4);
@@ -63,6 +63,19 @@ app.registerExtension({
                 this._rects.push({ x1: x, x2: x + cellW, y1: top, y2: top + h, size: PRESETS[i] });
             }
             ctx.restore();
+        };
+
+        // Override serialize to exclude the non-serializable preset widget from
+        // widgets_values — same drift fix as SmartBatchResize (see that file for details).
+        const origSerialize = node.serialize;
+        node.serialize = function () {
+            const data = origSerialize.call(this);
+            if (data.widgets_values) {
+                data.widgets_values = this.widgets
+                    .filter(w => w.serialize !== false && w.options?.serialize !== false)
+                    .map(w => w.value);
+            }
+            return data;
         };
 
         // Move preset row to right after longest_side

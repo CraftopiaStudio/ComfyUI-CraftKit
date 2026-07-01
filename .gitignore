@@ -2,6 +2,9 @@
 project-craftkit.md
 how-to-publish-comfyui-node.md
 
+# Local design source files
+assets/*.ai
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

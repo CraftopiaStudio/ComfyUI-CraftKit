@@ -33,8 +33,11 @@
         1024,
         8,
         "lanczos",
-        true,
         "",
+        true,
+        false,
+        1,
+        true,
         false,
         "resized",
         true,
@@ -66,18 +69,20 @@
       "id": 3,
       "type": "Note",
       "pos": [460, 390],
-      "size": [320, 220],
+      "size": [340, 400],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {
-        "text": "Smart Batch Resize — outputs uitleg:\n\n📷 images  → PreviewImage of verder bewerken\n📝 filenames → bestandsnamen (zonder pad)\n📁 output_paths → volledige paden op schijf\n🔢 count → aantal verwerkte afbeeldingen\n\nDe node schrijft sowieso naar schijf.\nDe outputs zijn optioneel aan te sluiten."
+        "text": "Smart Batch Resize — how it works\n\nThe node ALWAYS writes resized images to disk — connecting the outputs is optional.\n\nOutputs:\n📷 images → batch tensor, feed into PreviewImage or any IMAGE input\n🔢 count  → number of images actually processed\n\nKey settings:\n📁 Input folder — pick with Browse folder, or paste a path\n📐 Longest side — target size, aspect ratio is always preserved\n🔢 Round to multiple of — snap dimensions (use 8 for SD/Flux)\n🏷️ Filename prefix / Keep original filename / Add counter — build the output filename\n📂 Create resolution subfolder / Custom output subfolder — where resized files land (default: input_folder/resized/)\n⏭️ Skip existing files — don't reprocess files already in the output folder\n\n▶️ Run Batch = same as the regular Run button — it just runs this node. No separate output folder needed: results are saved inside the input folder itself (in the resized/ subfolder).\n\nTip: leave the prefix empty and 'Keep original filename' on to preserve names, or turn it off and use a prefix + counter for a clean renumbered batch."
       },
       "widgets_values": [
-        "Smart Batch Resize — outputs uitleg:\n\n📷 images  → PreviewImage of verder bewerken\n📝 filenames → bestandsnamen (zonder pad)\n📁 output_paths → volledige paden op schijf\n🔢 count → aantal verwerkte afbeeldingen\n\nDe node schrijft sowieso naar schijf.\nDe outputs zijn optioneel aan te sluiten."
-      ]
+        "Smart Batch Resize — how it works\n\nThe node ALWAYS writes resized images to disk — connecting the outputs is optional.\n\nOutputs:\n📷 images → batch tensor, feed into PreviewImage or any IMAGE input\n🔢 count  → number of images actually processed\n\nKey settings:\n📁 Input folder — pick with Browse folder, or paste a path\n📐 Longest side — target size, aspect ratio is always preserved\n🔢 Round to multiple of — snap dimensions (use 8 for SD/Flux)\n🏷️ Filename prefix / Keep original filename / Add counter — build the output filename\n📂 Create resolution subfolder / Custom output subfolder — where resized files land (default: input_folder/resized/)\n⏭️ Skip existing files — don't reprocess files already in the output folder\n\n▶️ Run Batch = same as the regular Run button — it just runs this node. No separate output folder needed: results are saved inside the input folder itself (in the resized/ subfolder).\n\nTip: leave the prefix empty and 'Keep original filename' on to preserve names, or turn it off and use a prefix + counter for a clean renumbered batch."
+      ],
+      "color": "#2a3a2a",
+      "bgcolor": "#1a2a1a"
     }
   ],
   "links": [

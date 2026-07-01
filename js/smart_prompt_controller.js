@@ -31,7 +31,7 @@ app.registerExtension({
             ctx.textBaseline = "middle";
             ctx.fillStyle = this._text ? "#f28f41" : "#666";
             ctx.fillText(
-                this._text || "— run to see result —",
+                this._text || "— RUN TO SEE RESULT —",
                 widgetWidth / 2,
                 y + height / 2
             );

@@ -29,6 +29,28 @@ def _calc_new_size(w, h, longest_side, multiple_of):
     return new_w, new_h
 
 
+def _build_stem(original_stem, prefix, use_original_name, use_counter, counter_index, counter_start, suffix_resolution, longest_side, delimiter):
+    parts = []
+
+    if prefix:
+        parts.append(prefix)
+
+    if use_original_name:
+        parts.append(original_stem)
+
+    if use_counter:
+        number = counter_start + counter_index
+        parts.append(f"{number:03d}")
+
+    if suffix_resolution:
+        parts.append(str(longest_side))
+
+    if not parts:
+        parts.append(original_stem)
+
+    return delimiter.join(parts)
+
+
 class SmartBatchResize:
 
     @classmethod
@@ -57,14 +79,26 @@ class SmartBatchResize:
                 }),
 
                 # OUTPUT NAMING
-                "suffix_resolution": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "Append resolution to filename. E.g. image_1024.png"
-                }),
-                "suffix_custom": ("STRING", {
+                "prefix": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Text added after the filename. E.g. photo → photo_headshot."
+                    "tooltip": "Label prepended to filename. E.g. 'headshot' → headshot_photo_001_1024.jpg"
+                }),
+                "use_original_name": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Include the original filename in the output name."
+                }),
+                "use_counter": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Add a sequential 3-digit counter to each filename (001, 002, ...)."
+                }),
+                "counter_start": ("INT", {
+                    "default": 1, "min": 0, "max": 99999, "step": 1,
+                    "tooltip": "Starting number for the counter. Useful when processing multiple batches."
+                }),
+                "suffix_resolution": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Append resolution to filename. E.g. photo_1024.png"
                 }),
 
                 # OUTPUT LOCATION
@@ -86,7 +120,7 @@ class SmartBatchResize:
                 "delimiter": ("STRING", {
                     "default": "_",
                     "multiline": False,
-                    "tooltip": "Separator between filename and folder parts. E.g. _ or -"
+                    "tooltip": "Separator between filename parts. E.g. _ or -"
                 }),
             }
         }
@@ -99,35 +133,16 @@ class SmartBatchResize:
     OUTPUT_NODE = True
 
     def run(self, input_folder, longest_side, multiple_of, interpolation,
-            suffix_resolution, suffix_custom,
+            prefix, use_original_name, use_counter, counter_start, suffix_resolution,
             folder_resolution, folder_custom,
             skip_if_exists, delimiter):
 
-        # Resolve filename suffix
-        suffix_raw = suffix_custom.strip()
-        if suffix_resolution:
-            if suffix_raw == "":
-                suffix_raw = f"{delimiter}{longest_side}"
-            else:
-                suffix_raw = f"{suffix_raw}{delimiter}{longest_side}"
-
-        # Ensure delimiter is prepended if there's a suffix
-        if suffix_raw != "" and not suffix_raw.startswith(delimiter):
-            filename_suffix = f"{delimiter}{suffix_raw}"
-        else:
-            filename_suffix = suffix_raw
-
         # Resolve output subfolder
         subfolder = folder_custom.strip()
-        
         if subfolder == "":
-            if folder_resolution:
-                subfolder = str(longest_side)  # Only resolution
-            else:
-                subfolder = "resized"  # Fallback
-        else:
-            if folder_resolution:
-                subfolder = f"{subfolder}{delimiter}{longest_side}"
+            subfolder = str(longest_side) if folder_resolution else "resized"
+        elif folder_resolution:
+            subfolder = f"{subfolder}{delimiter}{longest_side}"
 
         input_folder = input_folder.strip()
         if not input_folder:
@@ -148,13 +163,26 @@ class SmartBatchResize:
 
         interp = INTERP_MAP[interpolation]
         images_out = []
+        counter_index = 0
 
         for f in files:
-            out_name = f"{f.stem}{filename_suffix}{f.suffix.lower()}"
+            stem = _build_stem(
+                original_stem=f.stem,
+                prefix=prefix.strip(),
+                use_original_name=use_original_name,
+                use_counter=use_counter,
+                counter_index=counter_index,
+                counter_start=counter_start,
+                suffix_resolution=suffix_resolution,
+                longest_side=longest_side,
+                delimiter=delimiter,
+            )
+            out_name = f"{stem}{f.suffix.lower()}"
             out_path = out_dir / out_name
 
             if skip_if_exists and out_path.exists():
                 print(f"[SmartBatchResize] Skipped (exists): {out_name}")
+                counter_index += 1
                 continue
 
             img = PILImage.open(f).convert("RGB")
@@ -170,11 +198,13 @@ class SmartBatchResize:
 
             arr = np.array(img_resized).astype("float32") / 255.0
             images_out.append(torch.from_numpy(arr).unsqueeze(0))
+            counter_index += 1
 
         if not images_out:
             raise ValueError("[SmartBatchResize] No images processed.")
 
-        return (images_out, len(images_out))
+        summary = f"✓ {len(images_out)} images saved → {subfolder}/"
+        return {"ui": {"text": [summary]}, "result": (images_out, len(images_out))}
 
 
 NODE_CLASS_MAPPINGS        = {"SmartBatchResize": SmartBatchResize}

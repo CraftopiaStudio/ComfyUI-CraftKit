@@ -1,0 +1,205 @@
+{
+  "last_node_id": 10,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [0, -240],
+      "size": {"0": 1090, "1": 180},
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["CraftKit — Smart Prompt Controller + Smart Profile Switch\n\nSet index to 1 and control_after_generate to 'increment' — cycles through all 16 prompts automatically, one per generation.\n\nSmartPromptController picks the right prompt line and tells SmartProfileSwitch which profile is active (1–4).\nSmartProfileSwitch switches the resolution and label to match. Connect the outputs on the right to your sampler pipeline."],
+      "color": "#2a3a2a",
+      "bgcolor": "#1a2a1a"
+    },
+    {
+      "id": 3,
+      "type": "PrimitiveStringMultiline",
+      "pos": [0, -20],
+      "size": {"0": 340, "1": 210},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "value", "type": "STRING", "widget": {"name": "value"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "STRING", "type": "STRING", "links": [1], "slot_index": 0}
+      ],
+      "title": "Headshot Prompts",
+      "properties": {"cnr_id": "comfy-core", "ver": "0.17.0", "Node name for S&R": "PrimitiveStringMultiline"},
+      "widgets_values": ["01 headshot portrait, face and neck only, neutral expression, soft studio lighting, clean background\n02 headshot portrait, slight smile, diffused window light, plain white background\n03 headshot portrait, professional look, direct gaze, high-key studio lighting\n04 headshot portrait, relaxed expression, warm natural daylight, simple neutral background"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "PrimitiveStringMultiline",
+      "pos": [360, -20],
+      "size": {"0": 340, "1": 210},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "value", "type": "STRING", "widget": {"name": "value"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "STRING", "type": "STRING", "links": [2], "slot_index": 0}
+      ],
+      "title": "Halfbody Prompts",
+      "properties": {"cnr_id": "comfy-core", "ver": "0.17.0", "Node name for S&R": "PrimitiveStringMultiline"},
+      "widgets_values": ["05 half-body portrait, shoulders and chest visible, neutral expression, studio lighting, grey background\n06 half-body portrait, slight smile, arms relaxed at sides, soft window light from left\n07 half-body portrait, confident pose, looking slightly to the side, clean background\n08 half-body portrait, arms crossed, composed expression, even studio lighting"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "PrimitiveStringMultiline",
+      "pos": [0, 210],
+      "size": {"0": 340, "1": 210},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "value", "type": "STRING", "widget": {"name": "value"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "STRING", "type": "STRING", "links": [3], "slot_index": 0}
+      ],
+      "title": "Fullbody Prompts",
+      "properties": {"cnr_id": "comfy-core", "ver": "0.17.0", "Node name for S&R": "PrimitiveStringMultiline"},
+      "widgets_values": ["09 full-body portrait, standing straight, neutral pose, studio lighting, clean background\n10 full-body portrait, casual relaxed pose, hands in pockets, soft outdoor light\n11 full-body portrait, mid-stride walking pose, urban setting, natural daylight\n12 full-body portrait, dynamic confident pose, weight on one leg, plain backdrop"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "PrimitiveStringMultiline",
+      "pos": [360, 210],
+      "size": {"0": 340, "1": 210},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "value", "type": "STRING", "widget": {"name": "value"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "STRING", "type": "STRING", "links": [4], "slot_index": 0}
+      ],
+      "title": "Tall Portrait Prompts",
+      "properties": {"cnr_id": "comfy-core", "ver": "0.17.0", "Node name for S&R": "PrimitiveStringMultiline"},
+      "widgets_values": ["13 tall portrait, full figure head to toe, neutral standing pose, studio lighting, clean background\n14 tall portrait, elegant standing pose, one hand on hip, soft diffused light\n15 tall portrait, outdoor setting, warm golden hour rim light, natural relaxed pose\n16 tall portrait, indoor setting, leaning against wall, soft directional light"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 7,
+      "type": "SmartPromptController",
+      "pos": [740, -20],
+      "size": {"0": 300, "1": 290},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "prompt_list_1", "type": "STRING", "link": 1},
+        {"name": "prompt_list_2", "type": "STRING", "link": 2},
+        {"name": "prompt_list_3", "type": "STRING", "link": 3},
+        {"name": "prompt_list_4", "type": "STRING", "link": 4},
+        {"name": "index", "type": "INT", "widget": {"name": "index"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "prompt", "type": "STRING", "links": [], "slot_index": 0},
+        {"name": "active_list", "type": "INT", "links": [7], "slot_index": 1}
+      ],
+      "properties": {"cnr_id": "comfyui-craftkit", "Node name for S&R": "SmartPromptController"},
+      "widgets_values": [1, "increment"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 8,
+      "type": "SmartProfileSwitch",
+      "pos": [740, 310],
+      "size": {"0": 300, "1": 530},
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "index", "type": "INT", "widget": {"name": "index"}, "link": 7},
+        {"name": "label_1", "type": "STRING", "widget": {"name": "label_1"}, "link": null},
+        {"name": "width_1", "type": "INT", "widget": {"name": "width_1"}, "link": null},
+        {"name": "height_1", "type": "INT", "widget": {"name": "height_1"}, "link": null},
+        {"name": "label_2", "type": "STRING", "widget": {"name": "label_2"}, "link": null},
+        {"name": "width_2", "type": "INT", "widget": {"name": "width_2"}, "link": null},
+        {"name": "height_2", "type": "INT", "widget": {"name": "height_2"}, "link": null},
+        {"name": "label_3", "type": "STRING", "widget": {"name": "label_3"}, "link": null},
+        {"name": "width_3", "type": "INT", "widget": {"name": "width_3"}, "link": null},
+        {"name": "height_3", "type": "INT", "widget": {"name": "height_3"}, "link": null},
+        {"name": "label_4", "type": "STRING", "widget": {"name": "label_4"}, "link": null},
+        {"name": "width_4", "type": "INT", "widget": {"name": "width_4"}, "link": null},
+        {"name": "height_4", "type": "INT", "widget": {"name": "height_4"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "label", "type": "STRING", "links": [], "slot_index": 0},
+        {"name": "width", "type": "INT", "links": [], "slot_index": 1},
+        {"name": "height", "type": "INT", "links": [], "slot_index": 2}
+      ],
+      "properties": {"cnr_id": "comfyui-craftkit", "Node name for S&R": "SmartProfileSwitch"},
+      "widgets_values": [1, "Headshots", 1024, 1024, "Halfbody", 832, 1216, "Fullbody", 768, 1344, "Tall Portrait", 640, 1536],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [1080, -20],
+      "size": {"0": 300, "1": 380},
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["Connect to your pipeline:\n\n→ prompt (SmartPromptController)\n   positive CLIP text encoder\n\n→ label (SmartProfileSwitch)\n   filename prefix or suffix\n   e.g. SaveImageExtended filename_keys\n\n→ width / height (SmartProfileSwitch)\n   EmptyLatentImage or EmptySD3LatentImage\n\n─────────────────\n\nTip: label auto-switches per category every generation — no manual filename changes needed."],
+      "color": "#2a3a2a",
+      "bgcolor": "#1a2a1a"
+    }
+  ],
+  "links": [
+    [1, 3, 0, 7, 0, "STRING"],
+    [2, 4, 0, 7, 1, "STRING"],
+    [3, 5, 0, 7, 2, "STRING"],
+    [4, 6, 0, 7, 3, "STRING"],
+    [7, 7, 1, 8, 0, "INT"]
+  ],
+  "groups": [
+    {
+      "title": "Prompt Lists",
+      "bounding": [-20, -40, 720, 470],
+      "color": "#2d5a3a",
+      "font_size": 24
+    },
+    {
+      "title": "CraftKit Control",
+      "bounding": [720, -40, 340, 880],
+      "color": "#1e3d5a",
+      "font_size": 24
+    },
+    {
+      "title": "Connect to Your Pipeline",
+      "bounding": [1060, -40, 350, 440],
+      "color": "#1e4a4a",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {"scale": 0.7, "offset": [-30, 230]}
+  },
+  "version": 0.4
+}

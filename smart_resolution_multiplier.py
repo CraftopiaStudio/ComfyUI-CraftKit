@@ -9,7 +9,9 @@ class SmartResolutionMultiplier:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "image": ("IMAGE",),
+                "image": ("IMAGE", {
+                    "tooltip": "Source image. Its current width/height are read directly — no separate Get Image Size node needed."
+                }),
                 "multiplier": ("FLOAT", {
                     "default": 2.0,
                     "min": 0.1,

@@ -9,14 +9,14 @@ class SmartPromptController:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "counter": ("INT", {
+                "index": ("INT", {
                     "default": 1,
                     "min": 1,
                     "max": 99999,
                     "step": 1,
                     "display": "number",
                     "control_after_generate": "increment",
-                    "tooltip": "Current position across all lists. Increments each run.",
+                    "tooltip": "Current position across all lists.",
                 }),
             },
             "optional": {
@@ -28,7 +28,7 @@ class SmartPromptController:
         }
 
     RETURN_TYPES = ("STRING", "INT")
-    RETURN_NAMES = ("prompt", "list_index")
+    RETURN_NAMES = ("prompt", "active_list")
     FUNCTION = "control"
     CATEGORY = "CraftKit"
     OUTPUT_NODE = True
@@ -41,7 +41,7 @@ class SmartPromptController:
             text = text[0] if text else ""
         return [l for l in str(text).splitlines() if l.strip()]
 
-    def control(self, counter, prompt_list_1="", prompt_list_2="",
+    def control(self, index, prompt_list_1="", prompt_list_2="",
                 prompt_list_3="", prompt_list_4=""):
         raw = [prompt_list_1, prompt_list_2, prompt_list_3, prompt_list_4]
 
@@ -59,7 +59,7 @@ class SmartPromptController:
                     "result": ("", 0)}
 
         # Map counter position to list + line
-        position = (counter - 1) % total_all
+        idx = (index - 1) % total_all
 
         cumulative = 0
         selected_list_index = 0
@@ -67,9 +67,9 @@ class SmartPromptController:
         selected_prompt = ""
 
         for list_idx, lines in active:
-            if position < cumulative + len(lines):
+            if idx < cumulative + len(lines):
                 selected_list_index = list_idx
-                selected_line_index = position - cumulative
+                selected_line_index = idx - cumulative
                 selected_prompt = lines[selected_line_index]
                 break
             cumulative += len(lines)

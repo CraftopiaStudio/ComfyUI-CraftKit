@@ -48,8 +48,8 @@ class SmartResize:
                     "tooltip": "Resampling method. Lanczos is sharpest for downscaling."
                 }),
                 "upscale_if_smaller": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Also upscale images that are already smaller than the target longest side."
+                    "default": True,
+                    "tooltip": "Upscale images that are smaller than the target longest side. Turn off to only ever downscale, never upscale."
                 }),
             }
         }

@@ -6,8 +6,11 @@
       "longest_side": { "name": "Longest side (px)" },
       "multiple_of": { "name": "Round to multiple of" },
       "interpolation": { "name": "Interpolation method" },
+      "prefix": { "name": "Filename prefix" },
+      "use_original_name": { "name": "Keep original filename" },
+      "use_counter": { "name": "Add counter" },
+      "counter_start": { "name": "Counter start" },
       "suffix_resolution": { "name": "Add resolution to filename" },
-      "suffix_custom": { "name": "Custom filename suffix" },
       "folder_resolution": { "name": "Create resolution subfolder" },
       "folder_custom": { "name": "Custom output subfolder" },
       "skip_if_exists": { "name": "Skip existing files" },
@@ -46,10 +49,33 @@
       "2": { "name": "Resolution" }
     }
   },
+  "SmartProfileSwitch": {
+    "display_name": "Smart Profile Switch 🧩",
+    "inputs": {
+      "index": { "name": "Index" },
+      "label_1": { "name": "Label 1" },
+      "width_1": { "name": "Width 1" },
+      "height_1": { "name": "Height 1" },
+      "label_2": { "name": "Label 2" },
+      "width_2": { "name": "Width 2" },
+      "height_2": { "name": "Height 2" },
+      "label_3": { "name": "Label 3" },
+      "width_3": { "name": "Width 3" },
+      "height_3": { "name": "Height 3" },
+      "label_4": { "name": "Label 4" },
+      "width_4": { "name": "Width 4" },
+      "height_4": { "name": "Height 4" }
+    },
+    "outputs": {
+      "0": { "name": "Label" },
+      "1": { "name": "Width" },
+      "2": { "name": "Height" }
+    }
+  },
   "SmartPromptController": {
     "display_name": "Smart Prompt Controller 📋",
     "inputs": {
-      "counter": { "name": "counter" },
+      "index": { "name": "Index" },
       "prompt_list_1": { "name": "Prompt list 1" },
       "prompt_list_2": { "name": "Prompt list 2" },
       "prompt_list_3": { "name": "Prompt list 3" },
@@ -57,7 +83,7 @@
     },
     "outputs": {
       "0": { "name": "Prompt" },
-      "1": { "name": "List index" }
+      "1": { "name": "Active list" }
     }
   }
 }

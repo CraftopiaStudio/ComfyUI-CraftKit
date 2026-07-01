@@ -22,9 +22,6 @@ app.registerExtension({
             }
         }, { serialize: false });
 
-        // Fully exclude from serialization (both save AND load skip it) so it never
-        // shifts the index of the real widgets. serializeValue=()=>undefined did NOT
-        // do this — it left a placeholder on save but was skipped on load → drift.
         btn.serialize = false;
 
         // Move Browse button to right after input_folder (index 1)
@@ -81,7 +78,7 @@ app.registerExtension({
 
                 for (let i = 0; i < n; i++) {
                     const x = margin + i * (cellW + gap);
-                    const active = current === PRESETS[i];
+                    const active = Number(current) === PRESETS[i];
 
                     ctx.beginPath();
                     if (ctx.roundRect) ctx.roundRect(x, top, cellW, h, 4);
@@ -108,5 +105,99 @@ app.registerExtension({
                 node.widgets.splice(lsIdx + 1, 0, presetWidget);
             }
         }
+
+        // Override serialize so non-serializable JS widgets (Browse, presets, status,
+        // run batch) are excluded from widgets_values in the saved workflow JSON.
+        // Without this, LiteGraph saves null slots for these widgets which then shift
+        // all Python widget values on load (configure runs before nodeCreated).
+        // Invariant: Python widgets must stay in their original relative order in
+        // this.widgets — JS widgets may be spliced in between, but never reorder
+        // the Python ones, or the positional value assignment on load will silently
+        // misalign.
+        const origSerialize = node.serialize;
+        node.serialize = function () {
+            const data = origSerialize.call(this);
+            if (data.widgets_values) {
+                data.widgets_values = this.widgets
+                    .filter(w => w.serialize !== false && w.options?.serialize !== false)
+                    .map(w => w.value);
+            }
+            return data;
+        };
+
+        // Canvas-drawn status display
+        const statusWidget = node.addWidget("button", "_sbr_status", null, () => {}, { serialize: false });
+        statusWidget.serialize = false;
+        statusWidget._text = "";
+
+        statusWidget.draw = function (ctx, node, widgetWidth, y, height) {
+            const margin = 14;
+            const innerW = widgetWidth - margin * 2;
+            ctx.save();
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(margin, y + 2, innerW, height - 4, 4);
+            else ctx.rect(margin, y + 2, innerW, height - 4);
+            ctx.fillStyle = "#111";
+            ctx.fill();
+            ctx.strokeStyle = this._text ? "#3a3a3a" : "#222";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = "11px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = this._text ? "#f28f41" : "#666";
+            ctx.fillText(this._text || "— RUN TO PROCESS —", widgetWidth / 2, y + height / 2);
+            ctx.restore();
+        };
+
+        // Run Batch button
+        const runBtn = node.addWidget("button", "▶ Run Batch", null, () => {
+            app.queuePrompt(0, 1).catch(e => console.error("[SmartBatchResize] Queue failed:", e));
+        }, { serialize: false });
+        runBtn.serialize = false;
+
+        // Show/hide counter_start based on use_counter toggle
+        const useCounterWidget = node.widgets?.find(w => w.name === "use_counter");
+        const counterStartWidget = node.widgets?.find(w => w.name === "counter_start");
+        if (useCounterWidget && counterStartWidget) {
+            const defaultComputeSize = counterStartWidget.computeSize;
+            const updateCounterVisibility = () => {
+                counterStartWidget.computeSize = useCounterWidget.value
+                    ? defaultComputeSize
+                    : () => [0, -4];
+                node.setDirtyCanvas(true);
+            };
+            const origCallback = useCounterWidget.callback;
+            useCounterWidget.callback = function (...args) {
+                origCallback?.call(this, ...args);
+                updateCounterVisibility();
+            };
+            const origOnConfigure = node.onConfigure;
+            node.onConfigure = function (...args) {
+                origOnConfigure?.call(this, ...args);
+                updateCounterVisibility();
+            };
+            updateCounterVisibility();
+        }
+
+        // Hide any customtext widget already present (e.g. from a previously run workflow)
+        const hideCustomText = () => {
+            for (const w of node.widgets) {
+                if (w.type === "customtext") w.computeSize = () => [0, -4];
+            }
+        };
+        hideCustomText();
+
+        // Intercept onExecuted to update status and hide the default customtext output
+        const origOnExecuted = node.onExecuted;
+        node.onExecuted = function (output) {
+            origOnExecuted?.call(this, output);
+            if (output?.text?.[0]) {
+                statusWidget._text = output.text[0];
+                hideCustomText();
+            }
+            node.setDirtyCanvas(true);
+        };
+
     },
 });
