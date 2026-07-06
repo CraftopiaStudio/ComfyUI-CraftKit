@@ -2,7 +2,7 @@ class SmartResolutionMultiplier:
     """
     Multiplies image dimensions by a factor.
     Outputs width, height, and resolution (longest side) as INT.
-    Use resolution output directly with SeedVR max_resolution.
+    Use resolution output directly with SeedVR2's resolution input.
     """
 
     @classmethod
@@ -10,7 +10,7 @@ class SmartResolutionMultiplier:
         return {
             "required": {
                 "image": ("IMAGE", {
-                    "tooltip": "Source image. Its current width/height are read directly — no separate Get Image Size node needed."
+                    "tooltip": "Source image. Its current width/height are read directly, no separate Get Image Size node needed."
                 }),
                 "multiplier": ("FLOAT", {
                     "default": 2.0,

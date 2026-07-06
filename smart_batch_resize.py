@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageOps
 import numpy as np
 import torch
 
@@ -132,6 +132,13 @@ class SmartBatchResize:
     CATEGORY = "CraftKit"
     OUTPUT_NODE = True
 
+    @classmethod
+    def IS_CHANGED(cls, input_folder, **kwargs):
+        # Folder contents aren't a widget input, so ComfyUI can't see when files
+        # are added/removed. Force re-execution every run; skip_if_exists keeps
+        # already-processed files cheap.
+        return float("nan")
+
     def run(self, input_folder, longest_side, multiple_of, interpolation,
             prefix, use_original_name, use_counter, counter_start, suffix_resolution,
             folder_resolution, folder_custom,
@@ -164,6 +171,7 @@ class SmartBatchResize:
         interp = INTERP_MAP[interpolation]
         images_out = []
         counter_index = 0
+        skipped_count = 0
 
         for f in files:
             stem = _build_stem(
@@ -182,10 +190,16 @@ class SmartBatchResize:
 
             if skip_if_exists and out_path.exists():
                 print(f"[SmartBatchResize] Skipped (exists): {out_name}")
+                skipped_count += 1
                 counter_index += 1
+                existing = PILImage.open(out_path).convert("RGB")
+                arr = np.array(existing).astype("float32") / 255.0
+                images_out.append(torch.from_numpy(arr).unsqueeze(0))
                 continue
 
-            img = PILImage.open(f).convert("RGB")
+            img = PILImage.open(f)
+            img = ImageOps.exif_transpose(img)
+            img = img.convert("RGB")
             w, h = img.size
             new_w, new_h = _calc_new_size(w, h, longest_side, multiple_of)
 
@@ -200,10 +214,11 @@ class SmartBatchResize:
             images_out.append(torch.from_numpy(arr).unsqueeze(0))
             counter_index += 1
 
-        if not images_out:
-            raise ValueError("[SmartBatchResize] No images processed.")
-
-        summary = f"✓ {len(images_out)} images saved → {subfolder}/"
+        processed_count = len(images_out) - skipped_count
+        if skipped_count:
+            summary = f"✓ {processed_count} new, {skipped_count} already existed → {subfolder}/"
+        else:
+            summary = f"✓ {processed_count} images saved → {subfolder}/"
         return {"ui": {"text": [summary]}, "result": (images_out, len(images_out))}
 
 
