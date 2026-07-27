@@ -152,6 +152,11 @@ class SmartBatchResize:
                     "default": True,
                     "tooltip": "Append resolution to filename. E.g. photo_1024.png"
                 }),
+                "delimiter": ("STRING", {
+                    "default": "_",
+                    "multiline": False,
+                    "tooltip": "Separator between filename parts. E.g. _ or -"
+                }),
 
                 # OUTPUT LOCATION
                 "folder_resolution": ("BOOLEAN", {
@@ -162,21 +167,6 @@ class SmartBatchResize:
                     "default": "resized",
                     "multiline": False,
                     "tooltip": "Subfolder name. Resolution is appended if 'Create resolution subfolder' is on."
-                }),
-
-                # OPTIONS
-                "skip_if_exists": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "Skip files that already exist in the output folder AND still match the current size settings. If longest_side/multiple_of/upscale_if_smaller changed since the file was made, it's reprocessed instead of skipped."
-                }),
-                "delimiter": ("STRING", {
-                    "default": "_",
-                    "multiline": False,
-                    "tooltip": "Separator between filename parts. E.g. _ or -"
-                }),
-                "preview_limit": ("INT", {
-                    "default": 32, "min": 0, "max": 10000, "step": 1,
-                    "tooltip": "Max images to keep in memory for the preview output. All files are still processed and saved to disk; this only limits what's returned/previewed. 0 = no limit."
                 }),
 
                 # OUTPUT FORMAT
@@ -191,6 +181,16 @@ class SmartBatchResize:
                 "quality": ("INT", {
                     "default": 95, "min": 1, "max": 100, "step": 1,
                     "tooltip": "Compression quality for jpg/webp output. Ignored for png (always lossless)."
+                }),
+
+                # OPTIONS
+                "skip_if_exists": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Skip files that already exist in the output folder AND still match the current size settings. If longest_side/multiple_of/upscale_if_smaller changed since the file was made, it's reprocessed instead of skipped."
+                }),
+                "preview_limit": ("INT", {
+                    "default": 32, "min": 0, "max": 10000, "step": 1,
+                    "tooltip": "Max images to keep in memory for the preview output. All files are still processed and saved to disk; this only limits what's returned/previewed. 0 = no limit."
                 }),
             }
         }

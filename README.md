@@ -85,13 +85,13 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 
 ### 📁 Smart Batch Resize
 
-<img src="assets/screenshot-smart-batch-resize.png" width="100%">
+<img src="assets/screenshot-smart-batch-resize_v2.png" width="100%">
 
 Load **all images from a folder**, resize each one by longest side, and save into a subfolder. Build clean dataset filenames from a prefix, the original name, and/or a sequential counter — combined with an optional resolution suffix.
 
-Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images. It works as a **standalone node**: it needs no upstream input and no downstream connection to do its job — drop it on the canvas, point it at a folder, hit **Run Batch**, and it reads, resizes, and saves everything itself. Connecting the `images`/`count` outputs is entirely optional, e.g. for previewing results.
+Use this for **bulk preprocessing** — e.g. preparing a LoRA dataset from a folder of high-res images, or a batch of frames/renders for After Effects where transparency needs to survive the resize. It works as a **standalone node**: it needs no upstream input and no downstream connection to do its job — drop it on the canvas, point it at a folder, hit **Run Batch**, and it reads, resizes, and saves everything itself. Connecting the `images`/`count` outputs is entirely optional, e.g. for previewing results.
 
-Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side — or type any custom value directly into the field.
+Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side — or type any custom value directly into the field. Widgets are grouped into labeled sections (Resize, Filename, Output Location, Output Format, Options) to keep the node scannable despite the number of settings.
 
 | Input | Type | Default | Description |
 |---|---|---|---|
@@ -99,15 +99,20 @@ Includes a **Browse folder** button to pick the input folder directly from the n
 | Longest side (px) | INT | 1024 | Target size for longest side. Quick presets: 512 / 768 / 1024 / 1536 — or type any custom value directly into the field |
 | Round to multiple of | INT | 8 | Snap dimensions to this multiple |
 | Interpolation method | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |
+| Upscale if smaller | BOOLEAN | true | Upscale images smaller than the target longest side. Turn off to only ever downscale, never upscale |
 | Filename prefix | STRING | — | Label prepended to filename — e.g. `headshot` → `headshot_photo_001_1024.jpg` |
 | Keep original filename | BOOLEAN | true | Include the original filename in the output name |
 | Add counter | BOOLEAN | false | Add a sequential 3-digit counter to each filename (001, 002, ...) |
 | Counter start | INT | 1 | Starting number for the counter |
 | Add resolution to filename | BOOLEAN | true | Append resolution to filename — e.g. `photo_1024.png` |
+| Filename delimiter | STRING | _ | Separator between filename parts |
 | Create resolution subfolder | BOOLEAN | false | Append resolution to subfolder name — e.g. `resized_1024` |
 | Custom output subfolder | STRING | resized | Subfolder name inside the input folder |
-| Skip existing files | BOOLEAN | true | Skip files that already exist in the output folder |
-| Filename delimiter | STRING | _ | Separator between filename parts |
+| Output format | ENUM | keep_source | keep_source / png / webp / jpg — keep_source preserves each file's original extension; jpg cannot store transparency |
+| Alpha mode | ENUM | auto | auto: keep transparency only if the source has it · flatten: always composite onto white and output opaque RGB · keep: always output RGBA |
+| Quality | INT | 95 | Compression quality for jpg/webp output (1–100). Ignored for png (always lossless) |
+| Skip existing files | BOOLEAN | true | Skip files that already exist in the output folder **and** still match the current size settings — a settings change (e.g. a different longest_side) triggers a reprocess instead of silently serving a stale file |
+| Preview limit | INT | 32 | Max images kept in memory for the preview output. All files are still processed and saved to disk regardless — this only caps what's returned for preview. 0 = no limit |
 
 **Outputs:** Images (list), Count
 
@@ -148,6 +153,7 @@ Ready-to-load workflows are included in [`example_workflows/`](example_workflows
 - ComfyUI's built-in `Resize Images by Longer Edge` [BETA] has no Lanczos and no `multiple_of` snapping
 - `JWImageResizeByLongerSide` (comfyui-various) has no Lanczos in the official release
 - No existing node combines batch folder loading + longest-side resize + original filename preservation
+- Smart Batch Resize handles transparency deliberately instead of by accident — choose whether alpha is preserved, always kept, or flattened onto a solid background, and force a specific output format (png/webp/jpg) independent of the source files' own extensions
 - No existing node outputs a ready-to-use `resolution` INT for SeedVR2
 - No existing node cycles through multiple prompt lists with automatic list switching and an index
 - No existing node switches label + width + height together per category in one place

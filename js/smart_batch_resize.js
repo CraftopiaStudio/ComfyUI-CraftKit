@@ -106,6 +106,41 @@ app.registerExtension({
             }
         }
 
+        // Section-header dividers — visual only, not serialized. Standalone node
+        // with a lot of inputs, so grouping them keeps it scannable at a glance.
+        const addSectionDivider = (beforeWidgetName, label) => {
+            const target = node.widgets.find(w => w.name === beforeWidgetName);
+            if (!target) return;
+            const div = node.addWidget("button", `_div_${label}`, null, () => {}, { serialize: false });
+            div.serialize = false;
+            div.draw = function (ctx, node, widgetWidth, y, height) {
+                const lx = 14;
+                ctx.save();
+                ctx.font = "bold 10px sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "left";
+                ctx.fillStyle = "#888";
+                ctx.fillText(label, lx, y + height / 2);
+                const lineX = lx + ctx.measureText(label).width + 8;
+                ctx.beginPath();
+                ctx.moveTo(lineX, y + height / 2);
+                ctx.lineTo(widgetWidth - 14, y + height / 2);
+                ctx.strokeStyle = "#333";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+            };
+            const targetIdx = node.widgets.indexOf(target);
+            const divIdx = node.widgets.indexOf(div);
+            node.widgets.splice(divIdx, 1);
+            node.widgets.splice(targetIdx, 0, div);
+        };
+        addSectionDivider("longest_side", "RESIZE");
+        addSectionDivider("prefix", "FILENAME");
+        addSectionDivider("folder_resolution", "OUTPUT LOCATION");
+        addSectionDivider("skip_if_exists", "OPTIONS");
+        addSectionDivider("output_format", "OUTPUT FORMAT");
+
         // Override serialize so non-serializable JS widgets (Browse, presets, status,
         // run batch) are excluded from widgets_values in the saved workflow JSON.
         // Without this, LiteGraph saves null slots for these widgets which then shift
