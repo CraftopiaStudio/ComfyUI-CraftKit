@@ -39,6 +39,21 @@ app.registerExtension({
             ctx.restore();
         };
 
+        // Override serialize so non-serializable JS widgets (the result display)
+        // are excluded from widgets_values in the saved workflow JSON. Without this,
+        // LiteGraph saves null slots for these widgets which then shift all Python
+        // widget values on load (configure runs before nodeCreated).
+        const origSerialize = node.serialize;
+        node.serialize = function () {
+            const data = origSerialize.call(this);
+            if (data.widgets_values) {
+                data.widgets_values = this.widgets
+                    .filter(w => w.serialize !== false && w.options?.serialize !== false)
+                    .map(w => w.value);
+            }
+            return data;
+        };
+
         // Intercept onExecuted: update our widget, hide ComfyUI's default textarea
         const origOnExecuted = node.onExecuted;
         node.onExecuted = function (output) {

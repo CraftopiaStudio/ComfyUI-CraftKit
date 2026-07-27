@@ -4,6 +4,9 @@ how-to-publish-comfyui-node.md
 fable-review-2026-07-02.md
 opus-review-craftkit-2026-07-02.md
 
+# Claude Code session data
+.claude/
+
 # Local design source files
 assets/*.ai
 

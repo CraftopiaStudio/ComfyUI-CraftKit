@@ -73,7 +73,13 @@ app.registerExtension({
                 node.widgets.find(w => w.name === `height_${i}`),
             );
         }
-        node.widgets = [indexWidget, ...slotWidgets, statusWidget];
+        // Guard against a lookup returning undefined (e.g. a widget converted to
+        // an input) and never drop a widget we didn't explicitly place — append
+        // anything unrecognized at the end instead of silently discarding it.
+        const orderedWidgets = [indexWidget, ...slotWidgets, statusWidget].filter(Boolean);
+        const orderedSet = new Set(orderedWidgets);
+        const leftoverWidgets = node.widgets.filter(w => !orderedSet.has(w));
+        node.widgets = [...orderedWidgets, ...leftoverWidgets];
 
         // Serialize override — keeps non-serializable widgets out of widgets_values
         const origSerialize = node.serialize;

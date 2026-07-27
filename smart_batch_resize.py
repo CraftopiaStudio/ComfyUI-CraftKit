@@ -46,6 +46,26 @@ def _calc_new_size(w, h, longest_side, multiple_of, upscale_if_smaller):
     return new_w, new_h
 
 
+ALPHA_INCOMPATIBLE_EXT = {".jpg", ".jpeg", ".bmp"}
+
+
+def _flatten_to_white(img):
+    img = img.convert("RGBA")
+    bg = PILImage.new("RGB", img.size, (255, 255, 255))
+    bg.paste(img, mask=img.split()[3])
+    return bg
+
+
+def _apply_alpha_mode(img, alpha_mode):
+    has_alpha = img.mode in ("RGBA", "LA", "PA") or ("transparency" in img.info)
+    if alpha_mode == "flatten":
+        return _flatten_to_white(img) if has_alpha else img.convert("RGB")
+    if alpha_mode == "keep":
+        return img.convert("RGBA")
+    # auto
+    return img.convert("RGBA") if has_alpha else img.convert("RGB")
+
+
 def _build_stem(original_stem, prefix, use_original_name, use_counter, counter_index, counter_start, suffix_resolution, longest_side, delimiter):
     parts = []
 
@@ -136,7 +156,7 @@ class SmartBatchResize:
                 # OPTIONS
                 "skip_if_exists": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Skip files that already exist in the output folder."
+                    "tooltip": "Skip files that already exist in the output folder AND still match the current size settings. If longest_side/multiple_of/upscale_if_smaller changed since the file was made, it's reprocessed instead of skipped."
                 }),
                 "delimiter": ("STRING", {
                     "default": "_",
@@ -146,6 +166,20 @@ class SmartBatchResize:
                 "preview_limit": ("INT", {
                     "default": 32, "min": 0, "max": 10000, "step": 1,
                     "tooltip": "Max images to keep in memory for the preview output. All files are still processed and saved to disk; this only limits what's returned/previewed. 0 = no limit."
+                }),
+
+                # OUTPUT FORMAT
+                "output_format": (["keep_source", "png", "webp", "jpg"], {
+                    "default": "keep_source",
+                    "tooltip": "File format for saved images. 'keep_source' preserves each file's original extension. jpg cannot store transparency."
+                }),
+                "alpha_mode": (["auto", "flatten", "keep"], {
+                    "default": "auto",
+                    "tooltip": "auto: preserve transparency only if the source has it. flatten: always composite onto white and output opaque RGB. keep: always output RGBA. jpg/bmp output always flattens regardless (those formats can't store alpha)."
+                }),
+                "quality": ("INT", {
+                    "default": 95, "min": 1, "max": 100, "step": 1,
+                    "tooltip": "Compression quality for jpg/webp output. Ignored for png (always lossless)."
                 }),
             }
         }
@@ -178,7 +212,7 @@ class SmartBatchResize:
     def run(self, input_folder, longest_side, multiple_of, interpolation, upscale_if_smaller,
             prefix, use_original_name, use_counter, counter_start, suffix_resolution,
             folder_resolution, folder_custom,
-            skip_if_exists, delimiter, preview_limit):
+            skip_if_exists, delimiter, preview_limit, output_format, alpha_mode, quality):
 
         # Resolve output subfolder
         subfolder = folder_custom.strip()
@@ -238,31 +272,52 @@ class SmartBatchResize:
                 longest_side=longest_side,
                 delimiter=delimiter,
             )
-            out_name = f"{stem}{f.suffix.lower()}"
+            out_ext = f.suffix.lower() if output_format == "keep_source" else f".{output_format}"
+            out_name = f"{stem}{out_ext}"
             out_path = out_dir / out_name
             keep_preview = keep_all or total_count < preview_limit
 
             try:
+                can_skip = False
                 if skip_if_exists and out_path.exists():
-                    print(f"[SmartBatchResize] Skipped (exists): {out_name}")
+                    # Only honor the skip if the existing file's actual dimensions
+                    # still match what the current settings would produce — otherwise
+                    # a lowered longest_side/multiple_of would silently keep serving
+                    # a stale size from a previous run.
+                    try:
+                        src_w, src_h = PILImage.open(f).size
+                        expected_w, expected_h = _calc_new_size(src_w, src_h, longest_side, multiple_of, upscale_if_smaller)
+                        can_skip = PILImage.open(out_path).size == (expected_w, expected_h)
+                    except Exception:
+                        can_skip = False
+
+                if can_skip:
+                    print(f"[SmartBatchResize] Skipped (exists, matches current settings): {out_name}")
                     skipped_count += 1
                     total_count += 1
                     counter_index += 1
                     if keep_preview:
-                        existing = PILImage.open(out_path).convert("RGB")
+                        existing = PILImage.open(out_path)
+                        existing = _apply_alpha_mode(existing, alpha_mode)
                         arr = np.array(existing).astype("float32") / 255.0
                         images_out.append(torch.from_numpy(arr).unsqueeze(0))
                     continue
+                elif skip_if_exists and out_path.exists():
+                    print(f"[SmartBatchResize] Reprocessing (existing file doesn't match current settings): {out_name}")
 
                 img = PILImage.open(f)
                 img = ImageOps.exif_transpose(img)
-                img = img.convert("RGB")
+                img = _apply_alpha_mode(img, alpha_mode)
                 w, h = img.size
                 new_w, new_h = _calc_new_size(w, h, longest_side, multiple_of, upscale_if_smaller)
 
                 img_resized = img.resize((new_w, new_h), interp)
 
-                save_kwargs = {"quality": 95} if f.suffix.lower() in (".jpg", ".jpeg") else {}
+                if img_resized.mode == "RGBA" and out_ext in ALPHA_INCOMPATIBLE_EXT:
+                    img_resized = _flatten_to_white(img_resized)
+                    print(f"[SmartBatchResize] {f.name}: flattened transparency for {out_ext} (format doesn't support alpha)")
+
+                save_kwargs = {"quality": quality} if out_ext in (".jpg", ".jpeg", ".webp") else {}
                 img_resized.save(out_path, **save_kwargs)
 
                 print(f"[SmartBatchResize] {f.name} → {out_name} ({w}x{h} → {new_w}x{new_h})")

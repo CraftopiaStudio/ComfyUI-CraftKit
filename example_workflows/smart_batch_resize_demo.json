@@ -43,7 +43,10 @@
         "resized",
         true,
         "_",
-        32
+        32,
+        "keep_source",
+        "auto",
+        95
       ]
     },
     {

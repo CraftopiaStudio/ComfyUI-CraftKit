@@ -50,6 +50,8 @@ class SmartProfileSwitch:
             (label_3, width_3, height_3),
             (label_4, width_4, height_4),
         ]
+        if not (1 <= index <= 4):
+            print(f"[SmartProfileSwitch] index={index} is out of range (expected 1-4); clamping to slot {max(1, min(4, index))}. Check that Smart Prompt Controller is connected and has prompts.")
         idx = max(1, min(4, index)) - 1
         label, width, height = slots[idx]
         status = f"Slot {idx + 1}: {label}  |  {width} × {height}"
