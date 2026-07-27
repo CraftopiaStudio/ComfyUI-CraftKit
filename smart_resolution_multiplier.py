@@ -38,8 +38,8 @@ class SmartResolutionMultiplier:
     def run(self, image, multiplier, multiple_of):
         h, w = image.shape[1], image.shape[2]
 
-        new_w = int(round(w * multiplier))
-        new_h = int(round(h * multiplier))
+        new_w = round(w * multiplier)
+        new_h = round(h * multiplier)
 
         if multiple_of > 1:
             new_w = max(multiple_of, round(new_w / multiple_of) * multiple_of)

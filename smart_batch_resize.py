@@ -5,6 +5,11 @@ from PIL import Image as PILImage, ImageOps
 import numpy as np
 import torch
 
+try:
+    from comfy.utils import ProgressBar
+except Exception:
+    ProgressBar = None
+
 
 INTERP_MAP = {
     "lanczos":  PILImage.LANCZOS,
@@ -13,7 +18,10 @@ INTERP_MAP = {
     "nearest":  PILImage.NEAREST,
 }
 
-SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
+# .avif/.heic decoding depends on optional Pillow plugins that may not be installed;
+# if unsupported, the per-file try/except below skips that file with a clear warning
+# instead of crashing the batch.
+SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".jfif", ".webp", ".bmp", ".tiff", ".tif", ".avif", ".heic"}
 
 
 def _calc_new_size(w, h, longest_side, multiple_of, upscale_if_smaller):
@@ -98,7 +106,7 @@ class SmartBatchResize:
                 "input_folder": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Folder containing images to resize."
+                    "tooltip": "Folder containing images to resize. Only files directly in this folder are scanned — subfolders are not included."
                 }),
 
                 # RESIZE SETTINGS
@@ -259,6 +267,7 @@ class SmartBatchResize:
         failed_count = 0
         total_count = 0
         keep_all = preview_limit == 0
+        pbar = ProgressBar(len(files)) if ProgressBar else None
 
         for f in files:
             stem = _build_stem(
@@ -331,6 +340,9 @@ class SmartBatchResize:
             except Exception as e:
                 print(f"[SmartBatchResize] Failed: {f.name}: {e}")
                 failed_count += 1
+            finally:
+                if pbar:
+                    pbar.update(1)
 
         if skipped_count:
             summary = f"✓ {processed_count} new, {skipped_count} already existed → {subfolder}/"

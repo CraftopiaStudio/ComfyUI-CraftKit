@@ -2,7 +2,11 @@
 name = "comfyui-craftkit"
 description = "Smart resize, batch resize, resolution multiplier and prompt controller nodes for ComfyUI"
 version = "1.0.3"
+readme = "README.md"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
+# Pillow, NumPy, and PyTorch all ship with ComfyUI itself — intentionally not
+# re-declared here to avoid version conflicts with ComfyUI's own pins.
 dependencies = []
 
 [project.urls]

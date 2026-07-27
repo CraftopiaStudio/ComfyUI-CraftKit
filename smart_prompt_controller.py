@@ -1,6 +1,6 @@
 class SmartPromptController:
     """
-    Craftopia — Smart Prompt Controller 📋
+    CraftKit — Smart Prompt Controller 📋
     Cycles through up to 4 prompt lists using a single incrementing counter.
     Counts lines automatically and outputs the selected prompt + list number.
     """
@@ -31,7 +31,7 @@ class SmartPromptController:
     RETURN_NAMES = ("prompt", "active_list")
     FUNCTION = "control"
     CATEGORY = "CraftKit"
-    OUTPUT_NODE = True
+    OUTPUT_NODE = True  # renders a status label on the node; must always execute, don't prune this
 
     def _get_lines(self, text):
         """Return list of non-empty lines from a text block."""

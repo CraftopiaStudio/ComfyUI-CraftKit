@@ -14,8 +14,12 @@ __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 try:
     import asyncio
     import concurrent.futures
+    import os
+    import threading
     from aiohttp import web
     from server import PromptServer
+
+    _dialog_lock = threading.Lock()
 
     async def browse_folder(request):
         import subprocess, sys
@@ -85,18 +89,28 @@ public static class CraftKitFolderPicker
 
     public static string ShowDialog(IntPtr owner, string title)
     {
+        const uint ERROR_CANCELLED = 0x800704C7;
         var dialog = (IFileDialog)new FileOpenDialogRCW();
         dialog.SetOptions(0x20u | 0x40u); // FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM
         if (!string.IsNullOrEmpty(title)) dialog.SetTitle(title);
         int hr = dialog.Show(owner);
-        if (hr != 0) return null;
+        if (hr != 0)
+        {
+            if ((uint)hr == ERROR_CANCELLED) return null;
+            throw new System.Runtime.InteropServices.COMException("IFileDialog.Show failed", hr);
+        }
         IShellItemLocal item;
         dialog.GetResult(out item);
-        IntPtr pszPath;
-        item.GetDisplayName(0x80058000u, out pszPath); // SIGDN_FILESYSPATH
-        string path = Marshal.PtrToStringAuto(pszPath);
-        Marshal.FreeCoTaskMem(pszPath);
-        return path;
+        IntPtr pszPath = IntPtr.Zero;
+        try
+        {
+            item.GetDisplayName(0x80058000u, out pszPath); // SIGDN_FILESYSPATH
+            return Marshal.PtrToStringUni(pszPath);
+        }
+        finally
+        {
+            if (pszPath != IntPtr.Zero) Marshal.FreeCoTaskMem(pszPath);
+        }
     }
 }
 "@
@@ -110,8 +124,12 @@ $o.Width = 1; $o.Height = 1; $o.Opacity = 0
 $o.StartPosition = 'CenterScreen'
 $o.Add_Shown({
     $o.Activate()
-    $path = [CraftKitFolderPicker]::ShowDialog($o.Handle, 'Select input folder')
-    if ($path) { $script:r = $path }
+    try {
+        $path = [CraftKitFolderPicker]::ShowDialog($o.Handle, 'Select input folder')
+        if ($path) { $script:r = $path }
+    } catch {
+        $script:r = 'CRAFTKIT_DIALOG_ERROR:' + $_.Exception.Message
+    }
     $o.Close()
 })
 $o.ShowDialog() | Out-Null
@@ -126,11 +144,19 @@ $r
                 return ""
             return result.stdout.strip()
 
-        loop = asyncio.get_running_loop()
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            folder = await loop.run_in_executor(pool, _open_dialog)
+        if not _dialog_lock.acquire(blocking=False):
+            return web.json_response({"ok": False, "error": "A folder dialog is already open."}, status=409)
+        try:
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                folder = await loop.run_in_executor(pool, _open_dialog)
+        finally:
+            _dialog_lock.release()
 
-        if folder and __import__("os").path.isdir(folder):
+        if folder.startswith("CRAFTKIT_DIALOG_ERROR:"):
+            return web.json_response({"ok": False, "error": folder[len("CRAFTKIT_DIALOG_ERROR:"):]}, status=500)
+
+        if folder and os.path.isdir(folder):
             return web.json_response({"ok": True, "path": folder})
         return web.json_response({"ok": False, "cancelled": True})
 

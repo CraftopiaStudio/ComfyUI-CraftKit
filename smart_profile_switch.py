@@ -37,7 +37,7 @@ class SmartProfileSwitch:
     RETURN_NAMES  = ("label", "width", "height")
     FUNCTION      = "route"
     CATEGORY      = "CraftKit"
-    OUTPUT_NODE   = True
+    OUTPUT_NODE   = True  # renders a status label on the node; must always execute, don't prune this
 
     def route(self, index,
               label_1, width_1, height_1,
