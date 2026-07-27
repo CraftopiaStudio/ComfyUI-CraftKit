@@ -20,6 +20,10 @@ try:
     from server import PromptServer
 
     _dialog_lock = threading.Lock()
+    # Must match the literal 'CRAFTKIT_DIALOG_ERROR:' prefix written by the
+    # PowerShell catch block below (kept literal there to avoid brace-escaping
+    # a dense here-string).
+    _DIALOG_ERROR_PREFIX = "CRAFTKIT_DIALOG_ERROR:"
 
     async def browse_folder(request):
         import subprocess, sys
@@ -128,6 +132,7 @@ $o.Add_Shown({
         $path = [CraftKitFolderPicker]::ShowDialog($o.Handle, 'Select input folder')
         if ($path) { $script:r = $path }
     } catch {
+        # Must match _DIALOG_ERROR_PREFIX in __init__.py.
         $script:r = 'CRAFTKIT_DIALOG_ERROR:' + $_.Exception.Message
     }
     $o.Close()
@@ -153,8 +158,8 @@ $r
         finally:
             _dialog_lock.release()
 
-        if folder.startswith("CRAFTKIT_DIALOG_ERROR:"):
-            return web.json_response({"ok": False, "error": folder[len("CRAFTKIT_DIALOG_ERROR:"):]}, status=500)
+        if folder.startswith(_DIALOG_ERROR_PREFIX):
+            return web.json_response({"ok": False, "error": folder.removeprefix(_DIALOG_ERROR_PREFIX)}, status=500)
 
         if folder and os.path.isdir(folder):
             return web.json_response({"ok": True, "path": folder})

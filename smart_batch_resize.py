@@ -6,8 +6,11 @@ import numpy as np
 import torch
 
 try:
+    # Only unavailable when this module is imported standalone outside a live
+    # ComfyUI process (e.g. the test suite); ImportError is the only expected
+    # failure here, so anything else is left to surface normally.
     from comfy.utils import ProgressBar
-except Exception:
+except ImportError:
     ProgressBar = None
 
 
@@ -18,9 +21,9 @@ INTERP_MAP = {
     "nearest":  PILImage.NEAREST,
 }
 
-# .avif/.heic decoding depends on optional Pillow plugins that may not be installed;
-# if unsupported, the per-file try/except below skips that file with a clear warning
-# instead of crashing the batch.
+# .avif/.heic decoding (and, with output_format=keep_source, re-encoding) depends on
+# optional Pillow plugins that may not be installed; if unsupported, the per-file
+# try/except below skips that file with a clear warning instead of crashing the batch.
 SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".jfif", ".webp", ".bmp", ".tiff", ".tif", ".avif", ".heic"}
 
 
