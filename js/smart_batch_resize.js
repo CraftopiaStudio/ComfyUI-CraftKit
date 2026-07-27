@@ -11,7 +11,7 @@ app.registerExtension({
 
         const btn = node.addWidget("button", "📁 Browse folder", null, async () => {
             try {
-                const res = await fetch("/craftkit/browse_folder");
+                const res = await fetch("/craftkit/browse_folder", { method: "POST" });
                 const data = await res.json();
                 if (data.ok && data.path) {
                     folderWidget.value = data.path;

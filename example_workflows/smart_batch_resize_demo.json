@@ -33,6 +33,7 @@
         1024,
         8,
         "lanczos",
+        true,
         "",
         true,
         false,
@@ -41,7 +42,8 @@
         false,
         "resized",
         true,
-        "_"
+        "_",
+        32
       ]
     },
     {

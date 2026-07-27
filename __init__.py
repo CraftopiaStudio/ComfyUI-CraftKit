@@ -11,19 +11,29 @@ NODE_DISPLAY_NAME_MAPPINGS = {**A_NAMES, **B_NAMES, **C_NAMES, **D_NAMES, **E_NA
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 
-import asyncio
-import concurrent.futures
-from aiohttp import web
-from server import PromptServer
+try:
+    import asyncio
+    import concurrent.futures
+    from aiohttp import web
+    from server import PromptServer
 
-@PromptServer.instance.routes.get("/craftkit/browse_folder")
-async def browse_folder(request):
-    import subprocess, sys
+    async def browse_folder(request):
+        import subprocess, sys
 
-    def _open_dialog():
-        if sys.platform != "win32":
-            return ""
-        ps = r"""
+        if request.remote not in ("127.0.0.1", "::1"):
+            return web.json_response({"ok": False, "error": "forbidden"}, status=403)
+
+        origin = request.headers.get("Origin")
+        if origin is not None:
+            host = request.headers.get("Host", "")
+            origin_host = origin.split("://", 1)[-1]
+            if origin_host != host:
+                return web.json_response({"ok": False, "error": "forbidden"}, status=403)
+
+        def _open_dialog():
+            if sys.platform != "win32":
+                return ""
+            ps = r"""
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @"
 using System;
@@ -107,16 +117,23 @@ $o.Add_Shown({
 $o.ShowDialog() | Out-Null
 $r
 """
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", ps],
-            capture_output=True, text=True
-        )
-        return result.stdout.strip()
+            try:
+                result = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", ps],
+                    capture_output=True, text=True, timeout=300
+                )
+            except subprocess.TimeoutExpired:
+                return ""
+            return result.stdout.strip()
 
-    loop = asyncio.get_running_loop()
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        folder = await loop.run_in_executor(pool, _open_dialog)
+        loop = asyncio.get_running_loop()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            folder = await loop.run_in_executor(pool, _open_dialog)
 
-    if folder and __import__("os").path.isdir(folder):
-        return web.json_response({"ok": True, "path": folder})
-    return web.json_response({"ok": False, "cancelled": True})
+        if folder and __import__("os").path.isdir(folder):
+            return web.json_response({"ok": True, "path": folder})
+        return web.json_response({"ok": False, "cancelled": True})
+
+    PromptServer.instance.routes.post("/craftkit/browse_folder")(browse_folder)
+except Exception as e:
+    print(f"[CraftKit] Browse folder endpoint unavailable ({e}); paste input folder paths manually.")
