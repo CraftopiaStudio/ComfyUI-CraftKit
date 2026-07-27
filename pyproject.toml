@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-craftkit"
 description = "Smart resize, batch resize, resolution multiplier and prompt controller nodes for ComfyUI"
-version = "1.0.3"
+version = "1.1.0"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
