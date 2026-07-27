@@ -85,7 +85,7 @@ Use this as a **pipeline node** — IMAGE in, IMAGE out. No files are saved to d
 
 ### 📁 Smart Batch Resize
 
-<img src="assets/screenshot-smart-batch-resize_v2.png" width="100%">
+<img src="assets/screenshot-smart-batch-resize_v3.png" width="100%">
 
 Load **all images from a folder**, resize each one by longest side, and save into a subfolder. Build clean dataset filenames from a prefix, the original name, and/or a sequential counter — combined with an optional resolution suffix.
 
