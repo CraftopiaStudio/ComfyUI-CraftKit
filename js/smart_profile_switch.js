@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs";
 
 app.registerExtension({
     name: "Craftopia.SmartProfileSwitch",
@@ -9,58 +10,14 @@ app.registerExtension({
         // Slot header dividers — visual only, not serialized
         const dividers = [];
         for (let i = 1; i <= 4; i++) {
-            const div = node.addWidget("button", `_div_${i}`, null, () => {}, { serialize: false });
-            div.serialize = false;
-            const num = i;
-            div.draw = function (ctx, node, widgetWidth, y, height) {
-                const lx = 14;
-                const label = `SLOT ${num}`;
-                ctx.save();
-                ctx.font = "bold 10px sans-serif";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "left";
-                ctx.fillStyle = "#888";
-                ctx.fillText(label, lx, y + height / 2);
-                const lineX = lx + ctx.measureText(label).width + 8;
-                ctx.beginPath();
-                ctx.moveTo(lineX, y + height / 2);
-                ctx.lineTo(widgetWidth - 14, y + height / 2);
-                ctx.strokeStyle = "#333";
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                ctx.restore();
-            };
+            const div = createDividerWidget(`SLOT ${i}`);
+            node.addCustomWidget(div);
             dividers.push(div);
         }
 
         // Status widget — shows active slot after execution
-        const statusWidget = node.addWidget("button", "_sps_status", null, () => {}, { serialize: false });
-        statusWidget.serialize = false;
-        statusWidget._text = "";
-
-        statusWidget.draw = function (ctx, node, widgetWidth, y, height) {
-            const margin = 14;
-            const innerW = widgetWidth - margin * 2;
-            ctx.save();
-            ctx.beginPath();
-            if (ctx.roundRect) ctx.roundRect(margin, y + 2, innerW, height - 4, 4);
-            else ctx.rect(margin, y + 2, innerW, height - 4);
-            ctx.fillStyle = "#111";
-            ctx.fill();
-            ctx.strokeStyle = this._text ? "#3a3a3a" : "#222";
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.font = "11px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = this._text ? "#f28f41" : "#666";
-            ctx.fillText(
-                this._text || "— RUN TO SEE RESULT —",
-                widgetWidth / 2,
-                y + height / 2
-            );
-            ctx.restore();
-        };
+        const statusWidget = createStatusWidget("— RUN TO SEE RESULT —");
+        node.addCustomWidget(statusWidget);
 
         // Reorder: index, [div1, label_1, w_1, h_1], ..., [div4, label_4, w_4, h_4], status
         const indexWidget = node.widgets.find(w => w.name === "index");

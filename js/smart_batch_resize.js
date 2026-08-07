@@ -1,4 +1,7 @@
 import { app } from "../../scripts/app.js";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs";
+import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs";
+import { isVueNodes } from "./shared/nodes2.mjs";
 
 app.registerExtension({
     name: "Craftopia.SmartBatchResize",
@@ -32,77 +35,27 @@ app.registerExtension({
             node.widgets.splice(folderIdx + 1, 0, btn);
         }
 
-        // Compact preset chips for longest_side. Start from a REAL button widget
-        // (so all of ComfyUI's layout/computeSize/sizing integration is correct)
-        // and only override its draw + mouse. A bare custom widget with our own
-        // computeSize forced the node width and broke the layout on click.
+        // Compact preset chips for longest_side.
         const longestSideWidget = node.widgets?.find(w => w.name === "longest_side");
         if (longestSideWidget) {
             const PRESETS = [512, 768, 1024, 1536];
+            const presetWidget = createPresetPickerWidget(node, longestSideWidget, PRESETS);
 
-            // Per-chip click handled in the button callback (buttons route clicks
-            // to their callback, not to .mouse). We read the pointer position from
-            // the canvas at click time and match it against the drawn chip rects.
-            const presetWidget = node.addWidget("button", "size_presets", null, (value, canvas, node) => {
-                const gm = (canvas || app.canvas)?.graph_mouse;
-                if (!gm) return;
-                const lx = gm[0] - node.pos[0];
-                const ly = gm[1] - node.pos[1];
-                for (const r of presetWidget._rects) {
-                    if (lx >= r.x1 && lx <= r.x2 && ly >= r.y1 && ly <= r.y2) {
-                        longestSideWidget.value = r.size;
-                        longestSideWidget.callback?.(r.size, app.canvas, node);
-                        node.setDirtyCanvas(true);
-                        return;
-                    }
+            // Move preset row to right after longest_side — classic mode only.
+            // Under Nodes 2.0, splicing the DOM widget into the middle of
+            // node.widgets after configure() has already run desyncs Vue's
+            // value-to-row binding for every widget after it (values appear
+            // shifted by one row after save/reload, even though the saved
+            // widgets_values array itself is correct). Leaving the DOM widget
+            // wherever addDOMWidget placed it avoids that; classic mode's
+            // canvas-drawn widget doesn't have this issue, so it still repositions.
+            if (!isVueNodes()) {
+                const lsIdx = node.widgets.indexOf(longestSideWidget);
+                const pwIdx = node.widgets.indexOf(presetWidget);
+                if (pwIdx !== lsIdx + 1) {
+                    node.widgets.splice(pwIdx, 1);
+                    node.widgets.splice(lsIdx + 1, 0, presetWidget);
                 }
-            }, { serialize: false });
-            presetWidget.serialize = false;
-            presetWidget._rects = [];
-
-            presetWidget.draw = function (ctx, node, widgetWidth, y, height) {
-                const margin = 14;
-                const gap = 5;
-                const innerW = Math.max(40, widgetWidth - margin * 2);
-                const n = PRESETS.length;
-                const cellW = Math.max(10, (innerW - gap * (n - 1)) / n);
-                const h = Math.min(height - 2, 18);
-                const top = y + (height - h) / 2;
-                const current = longestSideWidget.value;
-                this._rects = [];
-
-                ctx.save();
-                ctx.font = "11px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-
-                for (let i = 0; i < n; i++) {
-                    const x = margin + i * (cellW + gap);
-                    const active = Number(current) === PRESETS[i];
-
-                    ctx.beginPath();
-                    if (ctx.roundRect) ctx.roundRect(x, top, cellW, h, 4);
-                    else ctx.rect(x, top, cellW, h);
-                    ctx.fillStyle = active ? "#f28f41" : "#2a2a2a";
-                    ctx.fill();
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = active ? "#f28f41" : "#555";
-                    ctx.stroke();
-
-                    ctx.fillStyle = active ? "#111" : "#ccc";
-                    ctx.fillText(String(PRESETS[i]), x + cellW / 2, top + h / 2 + 0.5);
-
-                    this._rects.push({ x1: x, x2: x + cellW, y1: top, y2: top + h, size: PRESETS[i] });
-                }
-                ctx.restore();
-            };
-
-            // Move preset row to right after longest_side
-            const lsIdx = node.widgets.indexOf(longestSideWidget);
-            const pwIdx = node.widgets.indexOf(presetWidget);
-            if (pwIdx !== lsIdx + 1) {
-                node.widgets.splice(pwIdx, 1);
-                node.widgets.splice(lsIdx + 1, 0, presetWidget);
             }
         }
 
@@ -111,25 +64,8 @@ app.registerExtension({
         const addSectionDivider = (beforeWidgetName, label) => {
             const target = node.widgets.find(w => w.name === beforeWidgetName);
             if (!target) return;
-            const div = node.addWidget("button", `_div_${label}`, null, () => {}, { serialize: false });
-            div.serialize = false;
-            div.draw = function (ctx, node, widgetWidth, y, height) {
-                const lx = 14;
-                ctx.save();
-                ctx.font = "bold 10px sans-serif";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "left";
-                ctx.fillStyle = "#888";
-                ctx.fillText(label, lx, y + height / 2);
-                const lineX = lx + ctx.measureText(label).width + 8;
-                ctx.beginPath();
-                ctx.moveTo(lineX, y + height / 2);
-                ctx.lineTo(widgetWidth - 14, y + height / 2);
-                ctx.strokeStyle = "#333";
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                ctx.restore();
-            };
+            const div = createDividerWidget(label);
+            node.addCustomWidget(div);
             const targetIdx = node.widgets.indexOf(target);
             const divIdx = node.widgets.indexOf(div);
             node.widgets.splice(divIdx, 1);
@@ -161,29 +97,8 @@ app.registerExtension({
         };
 
         // Canvas-drawn status display
-        const statusWidget = node.addWidget("button", "_sbr_status", null, () => {}, { serialize: false });
-        statusWidget.serialize = false;
-        statusWidget._text = "";
-
-        statusWidget.draw = function (ctx, node, widgetWidth, y, height) {
-            const margin = 14;
-            const innerW = widgetWidth - margin * 2;
-            ctx.save();
-            ctx.beginPath();
-            if (ctx.roundRect) ctx.roundRect(margin, y + 2, innerW, height - 4, 4);
-            else ctx.rect(margin, y + 2, innerW, height - 4);
-            ctx.fillStyle = "#111";
-            ctx.fill();
-            ctx.strokeStyle = this._text ? "#3a3a3a" : "#222";
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.font = "11px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = this._text ? "#f28f41" : "#666";
-            ctx.fillText(this._text || "— RUN TO PROCESS —", widgetWidth / 2, y + height / 2);
-            ctx.restore();
-        };
+        const statusWidget = createStatusWidget("— RUN TO PROCESS —");
+        node.addCustomWidget(statusWidget);
 
         // Run Batch button
         const runBtn = node.addWidget("button", "▶ Run Batch", null, () => {
