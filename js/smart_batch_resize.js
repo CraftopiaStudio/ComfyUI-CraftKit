@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
-import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=2";
-import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=2";
-import { isVueNodes } from "./shared/nodes2.mjs?v=2";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=3";
+import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=6";
+import { setWidgetVisible } from "./shared/widget_visibility.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartBatchResize",
@@ -41,21 +41,12 @@ app.registerExtension({
             const PRESETS = [512, 768, 1024, 1536];
             const presetWidget = createPresetPickerWidget(node, longestSideWidget, PRESETS);
 
-            // Move preset row to right after longest_side — classic mode only.
-            // Under Nodes 2.0, splicing the DOM widget into the middle of
-            // node.widgets after configure() has already run desyncs Vue's
-            // value-to-row binding for every widget after it (values appear
-            // shifted by one row after save/reload, even though the saved
-            // widgets_values array itself is correct). Leaving the DOM widget
-            // wherever addDOMWidget placed it avoids that; classic mode's
-            // canvas-drawn widget doesn't have this issue, so it still repositions.
-            if (!isVueNodes()) {
-                const lsIdx = node.widgets.indexOf(longestSideWidget);
-                const pwIdx = node.widgets.indexOf(presetWidget);
-                if (pwIdx !== lsIdx + 1) {
-                    node.widgets.splice(pwIdx, 1);
-                    node.widgets.splice(lsIdx + 1, 0, presetWidget);
-                }
+            // Move preset row to right after longest_side
+            const lsIdx = node.widgets.indexOf(longestSideWidget);
+            const pwIdx = node.widgets.indexOf(presetWidget);
+            if (pwIdx !== lsIdx + 1) {
+                node.widgets.splice(pwIdx, 1);
+                node.widgets.splice(lsIdx + 1, 0, presetWidget);
             }
         }
 
@@ -110,12 +101,8 @@ app.registerExtension({
         const useCounterWidget = node.widgets?.find(w => w.name === "use_counter");
         const counterStartWidget = node.widgets?.find(w => w.name === "counter_start");
         if (useCounterWidget && counterStartWidget) {
-            const defaultComputeSize = counterStartWidget.computeSize;
             const updateCounterVisibility = () => {
-                counterStartWidget.computeSize = useCounterWidget.value
-                    ? defaultComputeSize
-                    : () => [0, -4];
-                node.setDirtyCanvas(true);
+                setWidgetVisible(node, counterStartWidget, useCounterWidget.value);
             };
             const origCallback = useCounterWidget.callback;
             useCounterWidget.callback = function (...args) {
@@ -133,7 +120,7 @@ app.registerExtension({
         // Hide any customtext widget already present (e.g. from a previously run workflow)
         const hideCustomText = () => {
             for (const w of node.widgets) {
-                if (w.type === "customtext") w.computeSize = () => [0, -4];
+                if (w.type === "customtext") setWidgetVisible(node, w, false);
             }
         };
         hideCustomText();
@@ -145,6 +132,9 @@ app.registerExtension({
             if (output?.text?.[0]) {
                 statusWidget._text = output.text[0];
                 hideCustomText();
+                // setDirtyCanvas alone doesn't repaint Nodes 2.0's canvas bridge —
+                // see the comment in preset_picker_widget.mjs.
+                statusWidget.triggerDraw?.();
             }
             node.setDirtyCanvas(true);
         };

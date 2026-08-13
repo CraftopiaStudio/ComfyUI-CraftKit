@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=2";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=3";
+import { setWidgetVisible } from "./shared/widget_visibility.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartProfileSwitch",
@@ -58,9 +59,12 @@ app.registerExtension({
                 statusWidget._text = output.text[0];
                 for (const w of node.widgets) {
                     if (w !== statusWidget && w.type === "customtext") {
-                        w.computeSize = () => [0, -4];
+                        setWidgetVisible(node, w, false);
                     }
                 }
+                // setDirtyCanvas alone doesn't repaint Nodes 2.0's canvas bridge —
+                // see the comment in preset_picker_widget.mjs.
+                statusWidget.triggerDraw?.();
             }
             node.setDirtyCanvas(true);
         };

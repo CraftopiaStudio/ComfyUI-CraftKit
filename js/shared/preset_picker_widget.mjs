@@ -1,9 +1,23 @@
 import { app } from "../../../scripts/app.js";
-import { isVueNodes } from "./nodes2.mjs";
 
-const PRESET_ROW_HEIGHT = 22;
+// A single canvas-drawn implementation, used in both classic LiteGraph and
+// Nodes 2.0 (via the WidgetLegacy.vue bridge — type: "custom" isn't a
+// recognized Vue registry name, so it falls through to the bridge, same as
+// the divider/status widgets in canvas_widgets.mjs). No separate DOM-widget
+// path: an earlier version used addDOMWidget for Nodes 2.0, but repositioning
+// that DOM widget into the middle of node.widgets (to sit under longest_side
+// instead of at the end) desynced Vue's value-to-row binding for every widget
+// after it on save/reload. Canvas "custom" widgets don't have that problem —
+// they've been confirmed to survive reposition + reload fine — so there's no
+// need for the dual-path/DOM version this node's click-only (no hover)
+// interaction never actually required.
+const PRESET_ROW_HEIGHT = 26;
+// Hit-test area is padded a few px beyond the visible chip on every side —
+// forgiving actual mouse precision, which drifts a little between press and
+// release, unlike pixel-perfect synthetic clicks.
+const HIT_PAD = 3;
 
-function createClassicPresetWidget(node, targetWidget, presets) {
+export function createPresetPickerWidget(node, targetWidget, presets) {
     const widget = {
         name: "size_presets",
         type: "custom",
@@ -18,12 +32,21 @@ function createClassicPresetWidget(node, targetWidget, presets) {
             // Read the live node width rather than the (possibly stale-cached)
             // widgetWidth parameter — see the comment in canvas_widgets.mjs.
             const w = node?.size?.[0] || widgetWidth;
+            // Nodes 2.0's WidgetLegacy bridge permanently stamps widget.width
+            // from its own container onto this widget object (and never
+            // clears it on unmount). Classic LiteGraph's own click hit-test
+            // (getWidgetOnPos) reads widget.width — not node.size[0] — to
+            // decide the clickable X range, so once this node has ever been
+            // painted under Nodes 2.0, classic mode silently loses clicks on
+            // the right side of a wide node forever. Keep width in sync on
+            // every draw so classic's hit-test always agrees with reality.
+            this.width = w;
             const margin = 14;
-            const gap = 5;
+            const gap = 7;
             const innerW = Math.max(40, w - margin * 2);
             const n = presets.length;
             const cellW = Math.max(10, (innerW - gap * (n - 1)) / n);
-            const h = Math.min(height - 2, 18);
+            const h = Math.min(height - 2, 22);
             const top = y + (height - h) / 2;
             const current = targetWidget.value;
             this._rects = [];
@@ -57,10 +80,15 @@ function createClassicPresetWidget(node, targetWidget, presets) {
             if (event.type !== "pointerdown" && event.type !== "mousedown") return false;
             const [lx, ly] = pos;
             for (const r of this._rects) {
-                if (lx >= r.x1 && lx <= r.x2 && ly >= r.y1 && ly <= r.y2) {
+                if (lx >= r.x1 - HIT_PAD && lx <= r.x2 + HIT_PAD && ly >= r.y1 - HIT_PAD && ly <= r.y2 + HIT_PAD) {
                     targetWidget.value = r.size;
                     targetWidget.callback?.(r.size, app.canvas, node);
                     node.setDirtyCanvas(true, true);
+                    // Nodes 2.0's WidgetLegacy bridge only repaints its canvas
+                    // via the widget's own triggerDraw() (set on it once mounted),
+                    // not via setDirtyCanvas — without this the newly-active chip
+                    // never highlights even though the value did change.
+                    this.triggerDraw?.();
                     return true;
                 }
             }
@@ -68,58 +96,4 @@ function createClassicPresetWidget(node, targetWidget, presets) {
         },
     };
     return node.addCustomWidget(widget);
-}
-
-function createVuePresetWidget(node, targetWidget, presets) {
-    const root = document.createElement("div");
-    root.style.display = "flex";
-    root.style.gap = "5px";
-    root.style.padding = "0 14px";
-    root.style.width = "100%";
-    root.style.boxSizing = "border-box";
-
-    const buttons = presets.map((size) => {
-        const btn = document.createElement("button");
-        btn.textContent = String(size);
-        btn.style.flex = "1";
-        btn.style.padding = "4px 0";
-        btn.style.borderRadius = "4px";
-        btn.style.border = "1px solid #555";
-        btn.style.background = "#2a2a2a";
-        btn.style.color = "#ccc";
-        btn.style.fontSize = "11px";
-        btn.style.fontFamily = "sans-serif";
-        btn.style.cursor = "pointer";
-        const syncActive = () => {
-            const active = Number(targetWidget.value) === size;
-            btn.style.background = active ? "#f28f41" : "#2a2a2a";
-            btn.style.borderColor = active ? "#f28f41" : "#555";
-            btn.style.color = active ? "#111" : "#ccc";
-        };
-        btn.addEventListener("click", () => {
-            targetWidget.value = size;
-            targetWidget.callback?.(size, app.canvas, node);
-            for (const b of buttons) b.syncActive?.();
-            node.setDirtyCanvas(true, true);
-        });
-        btn.syncActive = syncActive;
-        syncActive();
-        root.appendChild(btn);
-        return btn;
-    });
-
-    const widget = node.addDOMWidget("size_presets", "craftkit_preset_picker", root, {
-        serialize: false,
-        hideOnZoom: false,
-    });
-    // Fixed-height row, not a flexible grower — same reasoning as Pixaroma's
-    // button-row DOM widget.
-    widget.computeLayoutSize = undefined;
-    return widget;
-}
-
-export function createPresetPickerWidget(node, targetWidget, presets) {
-    return isVueNodes()
-        ? createVuePresetWidget(node, targetWidget, presets)
-        : createClassicPresetWidget(node, targetWidget, presets);
 }

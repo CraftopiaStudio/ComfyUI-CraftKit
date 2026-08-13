@@ -31,19 +31,28 @@ export function createDividerWidget(label) {
         },
         draw(ctx, node, widgetWidth, y, height) {
             const w = node?.size?.[0] || widgetWidth;
-            const lx = 14;
+            const margin = 14;
+            const gap = 8;
             ctx.save();
             ctx.font = "bold 10px sans-serif";
             ctx.textBaseline = "middle";
-            ctx.textAlign = "left";
+            ctx.textAlign = "center";
+            const cy = y + height / 2;
+            const cx = w / 2;
+            const textW = ctx.measureText(label).width;
             ctx.fillStyle = "#888";
-            ctx.fillText(label, lx, y + height / 2);
-            const lineX = lx + ctx.measureText(label).width + 8;
-            ctx.beginPath();
-            ctx.moveTo(lineX, y + height / 2);
-            ctx.lineTo(w - 14, y + height / 2);
-            ctx.strokeStyle = "#333";
+            ctx.fillText(label, cx, cy);
+            // #555 rather than a more subtle #333 — Nodes 2.0 renders this canvas
+            // at 2x internal scale and then CSS-scales it again with the graph
+            // zoom, which softens a thin line enough that #333 became invisible
+            // there (classic mode draws at native resolution and stayed sharp).
+            ctx.strokeStyle = "#555";
             ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin, cy);
+            ctx.lineTo(cx - textW / 2 - gap, cy);
+            ctx.moveTo(cx + textW / 2 + gap, cy);
+            ctx.lineTo(w - margin, cy);
             ctx.stroke();
             ctx.restore();
         },

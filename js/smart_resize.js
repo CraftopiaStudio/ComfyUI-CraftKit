@@ -1,6 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=2";
-import { isVueNodes } from "./shared/nodes2.mjs?v=2";
+import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=6";
 
 app.registerExtension({
     name: "Craftopia.SmartResize",
@@ -27,18 +26,12 @@ app.registerExtension({
             return data;
         };
 
-        // Move preset row to right after longest_side — classic mode only.
-        // Under Nodes 2.0, splicing the DOM widget into the middle of
-        // node.widgets after configure() has already run desyncs Vue's
-        // value-to-row binding for every widget after it (see the comment in
-        // smart_batch_resize.js for the full explanation).
-        if (!isVueNodes()) {
-            const lsIdx = node.widgets.indexOf(longestSideWidget);
-            const pwIdx = node.widgets.indexOf(presetWidget);
-            if (pwIdx !== lsIdx + 1) {
-                node.widgets.splice(pwIdx, 1);
-                node.widgets.splice(lsIdx + 1, 0, presetWidget);
-            }
+        // Move preset row to right after longest_side
+        const lsIdx = node.widgets.indexOf(longestSideWidget);
+        const pwIdx = node.widgets.indexOf(presetWidget);
+        if (pwIdx !== lsIdx + 1) {
+            node.widgets.splice(pwIdx, 1);
+            node.widgets.splice(lsIdx + 1, 0, presetWidget);
         }
 
         // Force a full size/layout recompute now that the preset widget has

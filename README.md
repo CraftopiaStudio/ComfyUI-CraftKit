@@ -6,6 +6,10 @@ Custom nodes for ComfyUI - image resizing, dataset prep & prompt automation for 
 
 All nodes appear under the **CraftKit** category in the node menu.
 
+Every node renders correctly in both classic and **Nodes 2.0** (ComfyUI's newer Vue-based node UI):
+
+<img src="assets/screenshot-nodes2-compat.png" width="60%">
+
 ---
 
 ## Nodes
@@ -83,9 +87,29 @@ Use this as a **pipeline node** - IMAGE in, IMAGE out. No files are saved to dis
 
 ---
 
+### 📏 Smart Resolution Multiplier
+
+<img src="assets/screenshot-smart-resolution-multiplier.png" width="100%">
+
+Multiply image dimensions by a factor and output the results as integers.
+
+SeedVR2 takes a single `resolution` INT (the longest side) - not a width and height separately. Standard math nodes give you a FLOAT or require multiple steps to get there. This node does it cleanly in one step: give it your image and a multiplier, and it outputs `width`, `height`, and `resolution` (longest side) ready to connect directly to SeedVR2's `resolution` input.
+
+Also useful for LoRA dataset prep - using mixed resolutions in your training set generally produces better results than training on a single fixed size. Smart Resolution Multiplier makes it easy to dynamically calculate the right target size per image rather than hardcoding a value.
+
+| Input | Type | Default | Description |
+|---|---|---|---|
+| Image | IMAGE | - | Source image - its current width/height are read directly, no separate Get Image Size node needed |
+| Multiplier | FLOAT | 2.0 | Multiply width and height by this factor |
+| Round to multiple of | INT | 8 | Snap dimensions to this multiple |
+
+**Outputs:** Width, Height, Resolution (longest side as INT → directly into SeedVR2)
+
+---
+
 ### 📁 Smart Batch Resize
 
-<img src="assets/screenshot-smart-batch-resize_v3.png" width="100%">
+<img src="assets/screenshot-smart-batch-resize_v4.png" width="100%">
 
 Load **all images from a folder**, resize each one by longest side, and save into a subfolder. Build clean dataset filenames from a prefix, the original name, and/or a sequential counter - combined with an optional resolution suffix.
 
@@ -115,26 +139,6 @@ Includes a **Browse folder** button to pick the input folder directly from the n
 | Preview limit | INT | 32 | Max images kept in memory for the preview output. All files are still processed and saved to disk regardless - this only caps what's returned for preview. 0 = no limit |
 
 **Outputs:** Images (list), Count
-
----
-
-### 📏 Smart Resolution Multiplier
-
-<img src="assets/screenshot-smart-resolution-multiplier.png" width="100%">
-
-Multiply image dimensions by a factor and output the results as integers.
-
-SeedVR2 takes a single `resolution` INT (the longest side) - not a width and height separately. Standard math nodes give you a FLOAT or require multiple steps to get there. This node does it cleanly in one step: give it your image and a multiplier, and it outputs `width`, `height`, and `resolution` (longest side) ready to connect directly to SeedVR2's `resolution` input.
-
-Also useful for LoRA dataset prep - using mixed resolutions in your training set generally produces better results than training on a single fixed size. Smart Resolution Multiplier makes it easy to dynamically calculate the right target size per image rather than hardcoding a value.
-
-| Input | Type | Default | Description |
-|---|---|---|---|
-| Image | IMAGE | - | Source image - its current width/height are read directly, no separate Get Image Size node needed |
-| Multiplier | FLOAT | 2.0 | Multiply width and height by this factor |
-| Round to multiple of | INT | 8 | Snap dimensions to this multiple |
-
-**Outputs:** Width, Height, Resolution (longest side as INT → directly into SeedVR2)
 
 ---
 
@@ -175,8 +179,8 @@ Restart ComfyUI. All nodes appear under **CraftKit** in the node menu:
 - `CraftKit` → **Smart Prompt Controller 📋**
 - `CraftKit` → **Smart Profile Switch 🧩**
 - `CraftKit` → **Smart Resize 📐**
-- `CraftKit` → **Smart Batch Resize 📁**
 - `CraftKit` → **Smart Resolution Multiplier 📏**
+- `CraftKit` → **Smart Batch Resize 📁**
 
 ---
 
