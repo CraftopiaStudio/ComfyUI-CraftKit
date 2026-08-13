@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
-import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs";
-import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs";
-import { isVueNodes } from "./shared/nodes2.mjs";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=2";
+import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=2";
+import { isVueNodes } from "./shared/nodes2.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartBatchResize",
@@ -149,5 +149,12 @@ app.registerExtension({
             node.setDirtyCanvas(true);
         };
 
+        // Force a full size/layout recompute now that every widget has been
+        // added and repositioned. Without this, the preset-chip row's very
+        // first paint can use a stale/undersized widgetWidth (from before the
+        // node's final layout settled), rendering uneven or clipped chips
+        // until the next unrelated redraw fixes it.
+        node.setSize(node.computeSize());
+        node.setDirtyCanvas(true, true);
     },
 });

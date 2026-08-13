@@ -6,6 +6,16 @@
 // rather than a hardcoded value — a fixed/wrong computeSize previously broke
 // node layout on click when this was tried without care (see the comment on
 // the preset-chip widget in smart_resize.js's git history).
+//
+// draw() intentionally ignores its own `widgetWidth` parameter and reads
+// `node.size[0]` instead. LiteGraph caches a `.width` on custom-typed widget
+// objects the first time it lays them out and reuses that cached value on
+// later draws — for a widget added before the node reaches its final size
+// (e.g. before later Python widgets are added, or before an explicit
+// node.setSize() call), that cache goes stale and draw() keeps receiving the
+// old, too-narrow width forever, making the divider line/status box stop
+// partway across the node instead of spanning it. node.size[0] is always
+// live, so reading it directly sidesteps the stale cache entirely.
 
 const DIVIDER_HEIGHT = 20;
 
@@ -20,6 +30,7 @@ export function createDividerWidget(label) {
             return [width, DIVIDER_HEIGHT];
         },
         draw(ctx, node, widgetWidth, y, height) {
+            const w = node?.size?.[0] || widgetWidth;
             const lx = 14;
             ctx.save();
             ctx.font = "bold 10px sans-serif";
@@ -30,7 +41,7 @@ export function createDividerWidget(label) {
             const lineX = lx + ctx.measureText(label).width + 8;
             ctx.beginPath();
             ctx.moveTo(lineX, y + height / 2);
-            ctx.lineTo(widgetWidth - 14, y + height / 2);
+            ctx.lineTo(w - 14, y + height / 2);
             ctx.strokeStyle = "#333";
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -53,8 +64,9 @@ export function createStatusWidget(placeholderText) {
             return [width, STATUS_HEIGHT];
         },
         draw(ctx, node, widgetWidth, y, height) {
+            const w = node?.size?.[0] || widgetWidth;
             const margin = 14;
-            const innerW = widgetWidth - margin * 2;
+            const innerW = w - margin * 2;
             ctx.save();
             ctx.beginPath();
             if (ctx.roundRect) ctx.roundRect(margin, y + 2, innerW, height - 4, 4);
@@ -68,7 +80,7 @@ export function createStatusWidget(placeholderText) {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillStyle = this._text ? "#f28f41" : "#666";
-            ctx.fillText(this._text || placeholderText, widgetWidth / 2, y + height / 2);
+            ctx.fillText(this._text || placeholderText, w / 2, y + height / 2);
             ctx.restore();
         },
     };

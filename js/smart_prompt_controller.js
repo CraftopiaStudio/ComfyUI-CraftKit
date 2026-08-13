@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { createStatusWidget } from "./shared/canvas_widgets.mjs";
+import { createStatusWidget } from "./shared/canvas_widgets.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartPromptController",

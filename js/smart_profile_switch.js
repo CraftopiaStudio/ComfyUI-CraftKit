@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs";
+import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartProfileSwitch",

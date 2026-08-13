@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs";
-import { isVueNodes } from "./shared/nodes2.mjs";
+import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=2";
+import { isVueNodes } from "./shared/nodes2.mjs?v=2";
 
 app.registerExtension({
     name: "Craftopia.SmartResize",
@@ -40,5 +40,11 @@ app.registerExtension({
                 node.widgets.splice(lsIdx + 1, 0, presetWidget);
             }
         }
+
+        // Force a full size/layout recompute now that the preset widget has
+        // been added and repositioned — see the comment in
+        // smart_batch_resize.js for why this is needed.
+        node.setSize(node.computeSize());
+        node.setDirtyCanvas(true, true);
     },
 });

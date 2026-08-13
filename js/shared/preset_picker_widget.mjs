@@ -15,9 +15,12 @@ function createClassicPresetWidget(node, targetWidget, presets) {
             return [width, PRESET_ROW_HEIGHT];
         },
         draw(ctx, node, widgetWidth, y, height) {
+            // Read the live node width rather than the (possibly stale-cached)
+            // widgetWidth parameter — see the comment in canvas_widgets.mjs.
+            const w = node?.size?.[0] || widgetWidth;
             const margin = 14;
             const gap = 5;
-            const innerW = Math.max(40, widgetWidth - margin * 2);
+            const innerW = Math.max(40, w - margin * 2);
             const n = presets.length;
             const cellW = Math.max(10, (innerW - gap * (n - 1)) / n);
             const h = Math.min(height - 2, 18);
