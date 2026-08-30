@@ -60,85 +60,24 @@ try:
         return ""
 
     def _open_dialog_windows():
+        # Deliberately uses the plain .NET FolderBrowserDialog instead of the
+        # earlier IFileDialog/COM-interop approach (which used Add-Type to
+        # compile inline C#, ComImport, and raw Marshal/IntPtr calls). That
+        # pattern reads as COM-hijack-style shellcode to automated registry
+        # scanners even though it was benign; this trades the modern Explorer
+        # look for a plain tree-view dialog, in exchange for a much smaller,
+        # ordinary-looking script with no dynamic code compilation.
+        #
+        # Reverting to the modern look: the full IFileDialog/COM version
+        # (modern Explorer-style picker, works on Windows PowerShell 5.1 too)
+        # lived here before commit that introduced this comment — `git log -p
+        # -- __init__.py` to dig it out — and can be restored if the registry
+        # confirms that code pattern wasn't actually the scan trigger, or once
+        # pwsh is common enough that this fallback rarely matters. See
+        # [[comfyui-browse-folder-dialog]] memory for the full history/tradeoffs.
         import subprocess
         ps = r"""
 Add-Type -AssemblyName System.Windows.Forms
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-
-public static class CraftKitFolderPicker
-{
-    [ComImport, Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
-    private class FileOpenDialogRCW { }
-
-    [ComImport, Guid("42f85136-db7e-439c-85f1-e4075d135fc8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IFileDialog
-    {
-        [PreserveSig] int Show(IntPtr parent);
-        void SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
-        void SetFileTypeIndex(uint iFileType);
-        void GetFileTypeIndex(out uint piFileType);
-        void Advise(IntPtr pfde, out uint pdwCookie);
-        void Unadvise(uint dwCookie);
-        void SetOptions(uint fos);
-        void GetOptions(out uint fos);
-        void SetDefaultFolder(IntPtr psi);
-        void SetFolder(IntPtr psi);
-        void GetFolder(out IntPtr ppsi);
-        void GetCurrentSelection(out IntPtr ppsi);
-        void SetFileName(string pszName);
-        void GetFileName(out IntPtr pszName);
-        void SetTitle(string pszTitle);
-        void SetOkButtonLabel(string pszText);
-        void SetFileNameLabel(string pszLabel);
-        void GetResult(out IShellItemLocal ppsi);
-        void AddPlace(IntPtr psi, uint fdap);
-        void SetDefaultExtension(string pszDefaultExtension);
-        void Close(int hr);
-        void SetClientGuid(ref Guid guid);
-        void ClearClientData();
-        void SetFilter(IntPtr pFilter);
-    }
-
-    [ComImport, Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IShellItemLocal
-    {
-        void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
-        void GetParent(out IShellItemLocal ppsi);
-        void GetDisplayName(uint sigdnName, out IntPtr ppszName);
-        void GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
-        void Compare(IShellItemLocal psi, uint hint, out int piOrder);
-    }
-
-    public static string ShowDialog(IntPtr owner, string title)
-    {
-        const uint ERROR_CANCELLED = 0x800704C7;
-        var dialog = (IFileDialog)new FileOpenDialogRCW();
-        dialog.SetOptions(0x20u | 0x40u); // FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM
-        if (!string.IsNullOrEmpty(title)) dialog.SetTitle(title);
-        int hr = dialog.Show(owner);
-        if (hr != 0)
-        {
-            if ((uint)hr == ERROR_CANCELLED) return null;
-            throw new System.Runtime.InteropServices.COMException("IFileDialog.Show failed", hr);
-        }
-        IShellItemLocal item;
-        dialog.GetResult(out item);
-        IntPtr pszPath = IntPtr.Zero;
-        try
-        {
-            item.GetDisplayName(0x80058000u, out pszPath); // SIGDN_FILESYSPATH
-            return Marshal.PtrToStringUni(pszPath);
-        }
-        finally
-        {
-            if (pszPath != IntPtr.Zero) Marshal.FreeCoTaskMem(pszPath);
-        }
-    }
-}
-"@
-
 $r = ''
 $o = New-Object System.Windows.Forms.Form
 $o.TopMost = $true
@@ -149,8 +88,12 @@ $o.StartPosition = 'CenterScreen'
 $o.Add_Shown({
     $o.Activate()
     try {
-        $path = [CraftKitFolderPicker]::ShowDialog($o.Handle, 'Select input folder')
-        if ($path) { $script:r = $path }
+        $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dlg.Description = 'Select input folder'
+        $dlg.ShowNewFolderButton = $true
+        if ($dlg.ShowDialog($o) -eq [System.Windows.Forms.DialogResult]::OK) {
+            $script:r = $dlg.SelectedPath
+        }
     } catch {
         # Must match _DIALOG_ERROR_PREFIX in __init__.py.
         $script:r = 'CRAFTKIT_DIALOG_ERROR:' + $_.Exception.Message
@@ -160,14 +103,22 @@ $o.Add_Shown({
 $o.ShowDialog() | Out-Null
 $r
 """
-        try:
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps],
-                capture_output=True, text=True, timeout=300
-            )
-        except subprocess.TimeoutExpired:
-            return ""
-        return result.stdout.strip()
+        # PowerShell 7+ (pwsh, .NET 5+) renders FolderBrowserDialog with the
+        # modern Explorer-style picker automatically; Windows PowerShell 5.1
+        # (.NET Framework) only has the classic tree-view. Prefer pwsh when
+        # present and fall back to the always-available powershell.exe.
+        for exe in ("pwsh", "powershell"):
+            try:
+                result = subprocess.run(
+                    [exe, "-NoProfile", "-Command", ps],
+                    capture_output=True, text=True, timeout=300
+                )
+            except FileNotFoundError:
+                continue
+            except subprocess.TimeoutExpired:
+                return ""
+            return result.stdout.strip()
+        return ""
 
     def _open_dialog():
         import sys
