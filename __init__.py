@@ -25,23 +25,43 @@ try:
     # a dense here-string).
     _DIALOG_ERROR_PREFIX = "CRAFTKIT_DIALOG_ERROR:"
 
-    async def browse_folder(request):
-        import subprocess, sys
+    def _open_dialog_macos():
+        import subprocess
+        script = 'POSIX path of (choose folder with prompt "Select input folder")'
+        try:
+            result = subprocess.run(
+                ["osascript", "-e", script],
+                capture_output=True, text=True, timeout=300
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return ""
+        if result.returncode != 0:
+            return ""  # cancelled, or osascript unavailable
+        return result.stdout.strip()
 
-        if request.remote not in ("127.0.0.1", "::1"):
-            return web.json_response({"ok": False, "error": "forbidden"}, status=403)
+    _LINUX_PICKER_COMMANDS = [
+        ["zenity", "--file-selection", "--directory", "--title=Select input folder"],
+        ["kdialog", "--getexistingdirectory", os.path.expanduser("~"), "--title", "Select input folder"],
+    ]
 
-        origin = request.headers.get("Origin")
-        if origin is not None:
-            host = request.headers.get("Host", "")
-            origin_host = origin.split("://", 1)[-1]
-            if origin_host != host:
-                return web.json_response({"ok": False, "error": "forbidden"}, status=403)
-
-        def _open_dialog():
-            if sys.platform != "win32":
+    def _open_dialog_linux():
+        import subprocess
+        for cmd in _LINUX_PICKER_COMMANDS:
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            except FileNotFoundError:
+                continue
+            except subprocess.TimeoutExpired:
                 return ""
-            ps = r"""
+            if result.returncode != 0:
+                return ""  # cancelled
+            return result.stdout.strip()
+        print("[CraftKit] No folder picker found (tried zenity, kdialog); paste input folder paths manually.")
+        return ""
+
+    def _open_dialog_windows():
+        import subprocess
+        ps = r"""
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @"
 using System;
@@ -140,14 +160,34 @@ $o.Add_Shown({
 $o.ShowDialog() | Out-Null
 $r
 """
-            try:
-                result = subprocess.run(
-                    ["powershell", "-NoProfile", "-Command", ps],
-                    capture_output=True, text=True, timeout=300
-                )
-            except subprocess.TimeoutExpired:
-                return ""
-            return result.stdout.strip()
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps],
+                capture_output=True, text=True, timeout=300
+            )
+        except subprocess.TimeoutExpired:
+            return ""
+        return result.stdout.strip()
+
+    def _open_dialog():
+        import sys
+        if sys.platform == "win32":
+            return _open_dialog_windows()
+        elif sys.platform == "darwin":
+            return _open_dialog_macos()
+        else:
+            return _open_dialog_linux()
+
+    async def browse_folder(request):
+        if request.remote not in ("127.0.0.1", "::1"):
+            return web.json_response({"ok": False, "error": "forbidden"}, status=403)
+
+        origin = request.headers.get("Origin")
+        if origin is not None:
+            host = request.headers.get("Host", "")
+            origin_host = origin.split("://", 1)[-1]
+            if origin_host != host:
+                return web.json_response({"ok": False, "error": "forbidden"}, status=403)
 
         if not _dialog_lock.acquire(blocking=False):
             return web.json_response({"ok": False, "error": "A folder dialog is already open."}, status=409)
