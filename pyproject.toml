@@ -8,12 +8,14 @@ license = { file = "LICENSE" }
 # Pillow, NumPy, and PyTorch all ship with ComfyUI itself — intentionally not
 # re-declared here to avoid version conflicts with ComfyUI's own pins.
 dependencies = []
+keywords = ["comfyui", "resize", "batch-resize", "resolution", "prompt", "upscale", "image-processing", "lora"]
 classifiers = [
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
 Repository = "https://github.com/CraftopiaStudio/ComfyUI-CraftKit"
+Issues = "https://github.com/CraftopiaStudio/ComfyUI-CraftKit/issues"
 
 [tool.comfy]
 PublisherId = "craftopiastudio"
