@@ -13,6 +13,8 @@ try:
 except ImportError:
     ProgressBar = None
 
+from .craftkit_folder_guard import folder_allowed, denied_message
+
 
 INTERP_MAP = {
     "lanczos":  PILImage.LANCZOS,
@@ -208,7 +210,7 @@ class SmartBatchResize:
         # are added/removed on its own. Hash the listing so unrelated graph runs
         # can still hit the cache, while an actual folder change invalidates it.
         folder = input_folder.strip()
-        if not folder or not os.path.isdir(folder):
+        if not folder or not folder_allowed(folder) or not os.path.isdir(folder):
             return ""
         try:
             files = sorted(
@@ -246,6 +248,8 @@ class SmartBatchResize:
         input_folder = input_folder.strip()
         if not input_folder:
             raise ValueError("[SmartBatchResize] No folder selected. Enter a path or use the Browse button.")
+        if not folder_allowed(input_folder):
+            raise ValueError(denied_message(input_folder))
         if not os.path.isdir(input_folder):
             raise ValueError(f"[SmartBatchResize] Folder not found: {input_folder}")
 

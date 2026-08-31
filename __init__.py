@@ -111,7 +111,12 @@ $r
             try:
                 result = subprocess.run(
                     [exe, "-NoProfile", "-Command", ps],
-                    capture_output=True, text=True, timeout=300
+                    capture_output=True, text=True, timeout=300,
+                    # Without this, launching powershell.exe pops up its own
+                    # visible console window behind the folder dialog (ComfyUI
+                    # itself doesn't reuse it) — the dialog is the only UI this
+                    # is meant to show.
+                    creationflags=subprocess.CREATE_NO_WINDOW,
                 )
             except FileNotFoundError:
                 continue
@@ -153,6 +158,15 @@ $r
             return web.json_response({"ok": False, "error": folder.removeprefix(_DIALOG_ERROR_PREFIX)}, status=500)
 
         if folder and os.path.isdir(folder):
+            # The dialog's click-OK just happened in the operating system, not
+            # in this request, so this is the one place a folder can be
+            # authorized for SmartBatchResize's input_folder — see
+            # craftkit_folder_guard.py.
+            try:
+                from .craftkit_folder_guard import remember_folder
+                remember_folder(folder)
+            except Exception as e:
+                print(f"[CraftKit] Could not remember approved folder ({e}); it will need re-approving.")
             return web.json_response({"ok": True, "path": folder})
         return web.json_response({"ok": False, "cancelled": True})
 
