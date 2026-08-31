@@ -6,6 +6,10 @@ opus-review-craftkit-2026-07-02.md
 
 # Local dev-only tooling, not part of the published node package
 check_registry_status.bat
+check_registry_status_readable.ps1
+
+# Internal planning/implementation docs — never meant for the public repo
+docs/superpowers/
 
 # Claude Code session data
 .claude/
