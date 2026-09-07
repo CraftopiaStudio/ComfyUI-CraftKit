@@ -71,8 +71,9 @@ whether a path may be used at all. A path is accepted only if:
    more.
 
 Containment is `os.path.realpath` on both sides plus `os.path.commonpath`
-against each allowed root, in the `is_path_under` helper. Resolving both sides means a
-symlink or junction pointing out of an approved folder does not slip through,
+against each allowed root, in the `is_path_under` helper. Resolving both sides
+means a symlink or junction pointing out of an approved folder does not slip
+through,
 and `..` cannot walk upward, because the comparison happens after resolution.
 
 The guard is called before any filesystem access, on both paths:
@@ -88,9 +89,9 @@ finding.
 
 ### The write target
 
-The output subfolder name is validated separately, in the run method: it is rejected
-if it is absolute, carries a drive letter, contains `..`, or contains any path
-separator. The write target can therefore only ever be a direct child of an
+The output subfolder name is validated separately, in the run method: it is
+rejected if it is absolute, carries a drive letter, contains `..`, or contains
+any path separator. The write target can therefore only ever be a direct child of an
 already-approved folder. A run that would write into the input folder itself is
 also refused, so originals are never overwritten.
 
@@ -103,12 +104,12 @@ own. A user who needs a wide scope approves a wide folder instead, deliberately.
 
 ### Two smaller precautions
 
-- **UNC paths are screened before resolution.** On Windows, merely calling
-  `os.path.realpath()` or `os.path.isdir()` on a `\\server\share` path opens an
-  SMB connection and hands over an NTLM hash before any containment check gets
-  to run. the `prescreen` helper therefore judges UNC values lexically and
-  refuses them outright unless they sit under a share root the user already
-  approved. No filesystem call happens first.
+- **UNC paths are screened before resolution.** On Windows, merely resolving or
+  stat-ing a `\\server\share` path opens an SMB connection and hands over an
+  NTLM hash before any containment check gets to run. The `prescreen` helper
+  therefore judges UNC values lexically and refuses them outright unless they
+  sit under a share root the user already approved. No filesystem call happens
+  first.
 - **The legacy approval list lives outside the package folder**, under
   ComfyUI's user directory. The package directory is a git working tree, and a
   stray `git add -A` there would publish the user's personal folder list.
