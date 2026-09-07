@@ -3,8 +3,60 @@ import { createDividerWidget, createStatusWidget } from "./shared/canvas_widgets
 import { createPresetPickerWidget } from "./shared/preset_picker_widget.mjs?v=6";
 import { setWidgetVisible } from "./shared/widget_visibility.mjs?v=2";
 
+// Approved folders live in ComfyUI's own settings store, so approving one is a
+// plain settings write from the frontend: no CraftKit route, no helper process.
+// The id must stay identical to SETTING_KEY in craftkit_folder_guard.py.
+const SETTING_ID = "CraftKit.AllowedFolders";
+
+function getSetting(id) {
+    try {
+        if (app.extensionManager?.setting?.get) return app.extensionManager.setting.get(id);
+    } catch (e) { /* older frontend, fall through */ }
+    try {
+        return app.ui?.settings?.getSettingValue?.(id);
+    } catch (e) {
+        return undefined;
+    }
+}
+
+async function setSetting(id, value) {
+    if (app.extensionManager?.setting?.set) return await app.extensionManager.setting.set(id, value);
+    return await app.ui.settings.setSettingValue(id, value);
+}
+
+// ';' is the separator (no path contains one); newlines are accepted for
+// anyone who pastes a list into the settings field by hand. Mirrors
+// _split_folders() in craftkit_folder_guard.py.
+function splitFolders(value) {
+    const parts = Array.isArray(value)
+        ? value
+        : String(value ?? "").replace(/\r/g, "\n").replace(/;/g, "\n").split("\n");
+    return parts.map(cleanPath).filter(Boolean);
+}
+
+function cleanPath(p) {
+    let s = String(p ?? "").trim().replace(/^["']+|["']+$/g, "").trim();
+    // Strip a trailing separator, but never turn "D:/" into "D:".
+    while (s.length > 3 && (s.endsWith("/") || s.endsWith("\\"))) s = s.slice(0, -1);
+    return s;
+}
+
 app.registerExtension({
     name: "Craftopia.SmartBatchResize",
+
+    settings: [
+        {
+            id: SETTING_ID,
+            category: ["CraftKit", "Folders", "Approved folders"],
+            name: "Approved folders",
+            tooltip:
+                "Folders Smart Batch Resize is allowed to read and write, separated by ';'. " +
+                "Subfolders are included. Use the 'Approve folder' button on the node to add one. " +
+                "ComfyUI's own input/output/temp folders always work without being listed here.",
+            type: "text",
+            defaultValue: "",
+        },
+    ],
 
     async nodeCreated(node) {
         if (node.comfyClass !== "SmartBatchResize") return;
@@ -12,22 +64,42 @@ app.registerExtension({
         const folderWidget = node.widgets?.find(w => w.name === "input_folder");
         if (!folderWidget) return;
 
-        const btn = node.addWidget("button", "📁 Browse folder", null, async () => {
-            try {
-                const res = await fetch("/craftkit/browse_folder", { method: "POST" });
-                const data = await res.json();
-                if (data.ok && data.path) {
-                    folderWidget.value = data.path;
+        const APPROVE_LABEL = "✅ Approve folder";
+        const btn = node.addWidget("button", APPROVE_LABEL, null, async () => {
+            const flash = (label) => {
+                btn.label = label;
+                btn.name = label;
+                node.setDirtyCanvas(true);
+                setTimeout(() => {
+                    btn.label = APPROVE_LABEL;
+                    btn.name = APPROVE_LABEL;
                     node.setDirtyCanvas(true);
+                }, 1800);
+            };
+
+            const folder = cleanPath(folderWidget.value);
+            if (!folder) {
+                flash("⚠ Paste a path first");
+                return;
+            }
+            try {
+                const existing = splitFolders(getSetting(SETTING_ID));
+                const known = existing.some(f => f.toLowerCase() === folder.toLowerCase());
+                if (known) {
+                    flash("✔ Already approved");
+                    return;
                 }
+                await setSetting(SETTING_ID, [...existing, folder].join(";"));
+                flash("✔ Folder approved");
             } catch (e) {
-                console.error("[SmartBatchResize] Browse failed:", e);
+                console.error("[SmartBatchResize] Could not approve folder:", e);
+                flash("⚠ Approve failed (see console)");
             }
         }, { serialize: false });
 
         btn.serialize = false;
 
-        // Move Browse button to right after input_folder (index 1)
+        // Move Approve button to right after input_folder (index 1)
         const folderIdx = node.widgets.indexOf(folderWidget);
         const btnIdx = node.widgets.indexOf(btn);
         if (btnIdx !== folderIdx + 1) {
@@ -68,7 +140,7 @@ app.registerExtension({
         addSectionDivider("skip_if_exists", "OPTIONS");
         addSectionDivider("output_format", "OUTPUT FORMAT");
 
-        // Override serialize so non-serializable JS widgets (Browse, presets, status,
+        // Override serialize so non-serializable JS widgets (Approve, presets, status,
         // run batch) are excluded from widgets_values in the saved workflow JSON.
         // Without this, LiteGraph saves null slots for these widgets which then shift
         // all Python widget values on load (configure runs before nodeCreated).

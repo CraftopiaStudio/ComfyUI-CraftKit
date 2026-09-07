@@ -115,11 +115,13 @@ Load **all images from a folder**, resize each one by longest side, and save int
 
 Use this for **bulk preprocessing** - e.g. preparing a LoRA dataset from a folder of high-res images, or a batch of frames/renders for After Effects where transparency needs to survive the resize. It works as a **standalone node**: it needs no upstream input and no downstream connection to do its job - drop it on the canvas, point it at a folder, hit **Run Batch**, and it reads, resizes, and saves everything itself. Connecting the `images`/`count` outputs is entirely optional, e.g. for previewing results.
 
-Includes a **Browse folder** button to pick the input folder directly from the node, and quick presets (512 / 768 / 1024 / 1536) for the longest side - or type any custom value directly into the field. Widgets are grouped into labeled sections (Resize, Filename, Output Location, Output Format, Options) to keep the node scannable despite the number of settings.
+Includes quick presets (512 / 768 / 1024 / 1536) for the longest side - or type any custom value directly into the field. Widgets are grouped into labeled sections (Resize, Filename, Output Location, Output Format, Options) to keep the node scannable despite the number of settings.
+
+**Approving folders.** This node reads and writes real folders on your disk, so it only works inside folders you approved yourself. ComfyUI's own `input`, `output` and `temp` folders always work. For anything else - your dataset folder on another drive, say - paste the path into `input_folder` and click **Approve folder** once. That folder and everything under it stays approved from then on. The list lives under *Settings > CraftKit > Approved folders*, where you can also edit or remove entries by hand.
 
 | Input | Type | Default | Description |
 |---|---|---|---|
-| Input folder | STRING | - | Source folder path (use Browse button or paste manually) |
+| Input folder | STRING | - | Source folder path. Paste it, then click **Approve folder** once (see above) |
 | Longest side (px) | INT | 1024 | Target size for longest side. Quick presets: 512 / 768 / 1024 / 1536 - or type any custom value directly into the field |
 | Round to multiple of | INT | 8 | Snap dimensions to this multiple |
 | Interpolation method | ENUM | lanczos | lanczos / bicubic / bilinear / nearest |

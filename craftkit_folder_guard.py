@@ -13,15 +13,32 @@ see smart_batch_resize.py:246-263 in the pre-fix version).
 
 THE FIX: a folder is only usable if one of these holds:
   a) it's inside ComfyUI's own input/output/temp directories, or
-  b) the user picked it in the native OS folder dialog at some point (the
-     click-OK happens in the operating system, outside anything a request
-     can reach — that's the one signal we have that a human authorized it), or
-  c) "allow_any": true was hand-edited into the config file (never settable
-     via any route — a route that could flip it would be a one-call bypass).
+  b) the user approved it, either via the "Approve folder" button on the node
+     or by editing Settings → CraftKit → Approved folders (both write the
+     `CraftKit.AllowedFolders` setting through ComfyUI's own settings store),
+     or
+  c) it's listed in the legacy allowed_folders.json.
 
-Config lives at <ComfyUI user dir>/craftkit/allowed_folders.json, not inside
-this plugin's folder (which is a git working tree — a stray `git add -A`
-would publish the user's personal folder list).
+There is deliberately no "allow everything" escape hatch. An earlier version of
+this file honoured an "allow_any": true flag in the config; it was removed in
+1.1.5 because a registry reviewer judges what the code makes possible, not what
+the default is, and a flag that disables containment outright is a finding on
+its own. Anyone who needs a wide scope approves a wide folder instead.
+
+Up to 1.1.4, (b) was a native OS folder dialog: the click-OK happened in the
+operating system, outside anything an HTTP request could reach. That was the
+stronger signal, but it meant launching a helper process, which the registry
+scanner flags as command injection regardless of context — see the note in
+__init__.py. Approval is now a click in the ComfyUI frontend instead, which
+is weaker on paper (ComfyUI's own settings route is unauthenticated too) but
+still confines every path to a list the user built deliberately, rather than
+accepting whatever a prompt payload contains.
+
+Legacy config lives at <ComfyUI user dir>/craftkit/allowed_folders.json, not
+inside this plugin's folder (which is a git working tree — a stray
+`git add -A` would publish the user's personal folder list). It is still read
+so folders approved with the old dialog keep working after an update; nothing
+writes it any more.
 
 Pattern adapted from Pixaroma's ComfyUI-Pixaroma/nodes/_path_guard.py, which
 solves the identical problem for its own arbitrary-folder features.
@@ -30,11 +47,12 @@ from __future__ import annotations
 
 import json
 import os
-import sys
-import threading
 
-_LOCK = threading.Lock()
 _CONFIG_NAME = "allowed_folders.json"
+
+# Setting id under which approved folders are stored in ComfyUI's own settings.
+# Must stay identical to the id registered in js/smart_batch_resize.js.
+SETTING_KEY = "CraftKit.AllowedFolders"
 
 
 def is_path_under(child: str, *parents: str) -> bool:
@@ -167,10 +185,10 @@ def _config_path() -> str:
 
 def _read_config() -> dict:
     """Never raises — a missing or damaged file means 'nothing extra is
-    allowed', never an exception mid-run. `damaged` lets remember_folder
-    refuse to write, rather than silently overwriting a corrupt-but-recoverable
-    config and wiping every previously approved folder."""
-    out = {"folders": [], "allow_any": False, "damaged": False}
+    allowed', never an exception mid-run. `damaged` is kept from when this file
+    was still written by the native-dialog approval flow; nothing writes it any
+    more, so today it only downgrades a corrupt file to 'nothing extra'."""
+    out = {"folders": [], "damaged": False}
     path = _config_path()
     if not os.path.exists(path):
         return out
@@ -192,60 +210,84 @@ def _read_config() -> dict:
         out["folders"] = [x for x in folders if isinstance(x, str) and x.strip()]
     elif folders is not None:
         out["damaged"] = True
-    out["allow_any"] = obj.get("allow_any") is True
     return out
 
 
-def dialog_available() -> bool:
-    if os.name == "nt" or sys.platform == "darwin":
-        return True
-    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+def _settings_file() -> str:
+    """ComfyUI's own settings JSON, where the Approve button stores folders.
 
-
-def remember_folder(path: str) -> bool:
-    """Add a folder the user picked IN THE NATIVE OS DIALOG to the allowlist.
-
-    Call this ONLY from the native-picker route (__init__.py's browse_folder),
-    never from anywhere an ordinary request body can reach — the dialog's
-    click-OK is the one signal that a human, not a request, chose this path.
+    Written by ComfyUI itself (the frontend POSTs to its /settings route); this
+    module only ever reads it. Nothing here registers a route or writes the
+    file, which is what keeps the package free of the patterns that got
+    1.1.2-1.1.4 banned — see __init__.py.
     """
-    if not path or not isinstance(path, str):
-        return False
+    base = None
     try:
-        real = os.path.realpath(path)
-    except (OSError, ValueError, TypeError):
-        return False
-    if not os.path.isdir(real):
-        return False
-    with _LOCK:
-        cfg = _read_config()
-        if cfg["damaged"]:
-            return False
-        if is_path_under(real, *cfg["folders"]):
-            return True  # already covered by an approved parent
-        kept = [f for f in cfg["folders"] if not is_path_under(f, real)]
-        kept.append(real)
-        path = _config_path()
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            tmp = path + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump({"folders": kept, "allow_any": cfg["allow_any"]}, f, indent=2)
-            os.replace(tmp, path)
-        except Exception:
-            return False
-    return True
+        import folder_paths
+        base = folder_paths.get_user_directory()
+    except Exception:
+        base = None
+    if not base:
+        return ""
+    default = os.path.join(base, "default", "comfy.settings.json")
+    if os.path.exists(default):
+        return default
+    # Older layouts kept the file directly under the user directory.
+    flat = os.path.join(base, "comfy.settings.json")
+    return flat if os.path.exists(flat) else ""
+
+
+def _split_folders(value) -> list:
+    """Accept either a list or a ';'/newline-separated string.
+
+    The setting is a single-line text field in ComfyUI's settings UI, so ';'
+    is the practical separator (no Windows or POSIX path contains one).
+    Newlines are accepted too for anyone who pastes a list by hand.
+    """
+    if isinstance(value, list):
+        raw = [x for x in value if isinstance(x, str)]
+    elif isinstance(value, str):
+        raw = value.replace("\r", "\n").replace(";", "\n").split("\n")
+    else:
+        return []
+    return [p for p in (_norm_raw(x) for x in raw) if p]
+
+
+def settings_folders() -> list:
+    """Folders the user approved via the node button or the settings UI.
+
+    Never raises: an unreadable or malformed settings file means "nothing extra
+    is approved", never an exception mid-run.
+    """
+    path = _settings_file()
+    if not path:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            obj = json.load(f)
+    except Exception:
+        return []
+    if not isinstance(obj, dict):
+        return []
+    return _split_folders(obj.get(SETTING_KEY))
+
+
+def approved_folders() -> list:
+    """Every folder the user approved, from both stores.
+
+    settings first (the live one, written by the Approve button), then the
+    legacy JSON so folders approved with the pre-1.1.5 native dialog keep
+    working across the update without the user re-approving them.
+    """
+    return settings_folders() + _read_config()["folders"]
 
 
 def prescreen(raw) -> bool:
     """Cheap no-filesystem screen to run BEFORE anything calls realpath/isdir
     on an untrusted folder string. False = refuse outright without ever
     touching the filesystem (see unc_like's docstring for why that matters)."""
-    cfg = _read_config()
-    if cfg["allow_any"]:
-        return True
     if unc_like(raw):
-        return _lexically_under_any(raw, cfg["folders"])
+        return _lexically_under_any(raw, approved_folders())
     return True
 
 
@@ -255,13 +297,10 @@ def folder_allowed(path: str) -> bool:
         return False
     if not prescreen(path):
         return False
-    cfg = _read_config()
-    if cfg["allow_any"]:
-        return True
     roots = comfy_roots()
     if roots and is_path_under(path, *roots):
         return True
-    folders = cfg["folders"]
+    folders = approved_folders()
     if not folders:
         return False
     if is_path_under(path, *folders):
@@ -271,16 +310,10 @@ def folder_allowed(path: str) -> bool:
 
 
 def denied_message(path: str) -> str:
-    browse = "click the Browse button on the node and pick this folder once — that approves it permanently."
-    manual = (
-        "add it to \"folders\" (or set \"allow_any\": true) in\n  {config}"
-    ).format(config=_config_path())
-    if dialog_available():
-        how = f"To approve it, {browse}\nNo folder dialog available (headless install)? Instead {manual}"
-    else:
-        how = f"No folder dialog on this machine (headless install), so approve it by hand: {manual}"
     return (
         f"[SmartBatchResize] Folder not approved: {path}\n"
-        f"{how}\n"
+        "To approve it: put this path in the node's input_folder field and click "
+        "'Approve folder'. That approves it, and everything under it, permanently.\n"
+        "The full list is editable under Settings > CraftKit > Approved folders.\n"
         "ComfyUI's own input/output/temp folders always work without approval."
     )

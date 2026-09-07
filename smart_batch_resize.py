@@ -247,7 +247,7 @@ class SmartBatchResize:
 
         input_folder = input_folder.strip()
         if not input_folder:
-            raise ValueError("[SmartBatchResize] No folder selected. Enter a path or use the Browse button.")
+            raise ValueError("[SmartBatchResize] No folder selected. Paste a folder path into input_folder.")
         if not folder_allowed(input_folder):
             raise ValueError(denied_message(input_folder))
         if not os.path.isdir(input_folder):
