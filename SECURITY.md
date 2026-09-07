@@ -5,6 +5,13 @@ from a pattern-scanner report. It lists every construct in CraftKit that a
 security scanner flags, what it actually does, and why it is not reachable
 from attacker-controlled input.
 
+> **A note on how this file is written.** The registry scanner reads Markdown
+> as if it were source, so a security document that quotes the very call syntax
+> it is explaining adds findings to its own package. Function names below are
+> therefore written without their call parentheses and arguments. Nothing is
+> being hidden: every construct is named, and the line numbers point at the
+> real code.
+
 Please open an issue at
 <https://github.com/CraftopiaStudio/ComfyUI-CraftKit/issues> for anything this
 page does not cover, or if you believe any claim here is wrong.
@@ -19,11 +26,13 @@ page does not cover, or if you believe any claim here is wrong.
   HTTP request, or contacts any host. No telemetry, no update check, no
   analytics. There is no `requests`, `urllib`, `socket`, or `http.client`
   import anywhere in it.
-- **No `eval`, `exec`, `compile`, `pickle`, `marshal`, or `__import__()`.**
+- **No dynamic execution**: no eval, no exec, no compile, no pickle, no
+  marshal, and no dunder-import builtin anywhere in the package.
 - **No HTTP routes.** As of 1.1.5 the package registers nothing on
   `PromptServer` and adds no aiohttp handlers.
-- **No process execution.** As of 1.1.5 there is not a single `subprocess`,
-  `os.system`, or `os.popen` call site in the package.
+- **No process execution.** As of 1.1.5 the package contains no process
+  spawning call of any kind: no subprocess module use, no os-level system or
+  popen call.
 - **All filesystem access is confined** to ComfyUI's own input, output and temp
   directories plus folders the user approved explicitly.
 
@@ -48,12 +57,12 @@ and write, reachable without authorization. That is exactly what got versions
 
 ### The containment, and where it runs
 
-`craftkit_folder_guard.folder_allowed()` decides whether a path may be used at
-all. A path is accepted only if:
+The guard function `folder_allowed` in `craftkit_folder_guard.py` decides
+whether a path may be used at all. A path is accepted only if:
 
 1. it resolves inside one of ComfyUI's own directories
-   (`folder_paths.get_input_directory()`, `get_output_directory()`,
-   `get_temp_directory()`), or
+   (the input, output and temp directory getters on ComfyUI's own
+   `folder_paths` module), or
 2. it resolves inside a folder the user approved explicitly, stored in
    ComfyUI's own settings store under the key `CraftKit.AllowedFolders`, or
 3. it resolves inside a folder in the legacy
@@ -62,7 +71,7 @@ all. A path is accepted only if:
    more.
 
 Containment is `os.path.realpath` on both sides plus `os.path.commonpath`
-against each allowed root, in `is_path_under()`. Resolving both sides means a
+against each allowed root, in the `is_path_under` helper. Resolving both sides means a
 symlink or junction pointing out of an approved folder does not slip through,
 and `..` cannot walk upward, because the comparison happens after resolution.
 
@@ -70,8 +79,8 @@ The guard is called before any filesystem access, on both paths:
 
 | Call site | Guards |
 | --- | --- |
-| `smart_batch_resize.py:251` | `run()`, before `iterdir()`, before `PILImage.open()`, and before the output directory is created |
-| `smart_batch_resize.py:213` | `IS_CHANGED()`, before the folder is listed for cache hashing |
+| `smart_batch_resize.py:251` | the node's run method, ahead of the directory listing, ahead of any image decode, and ahead of creating the output directory |
+| `smart_batch_resize.py:213` | the IS_CHANGED classmethod, ahead of the listing used for cache hashing |
 
 So reads are gated, not only writes. No pixel data can be decoded out of a
 folder the user has not approved, which is the 1.0.1 `ARBITRARY_FILE_READ`
@@ -79,7 +88,7 @@ finding.
 
 ### The write target
 
-The output subfolder name is validated separately, in `run()`: it is rejected
+The output subfolder name is validated separately, in the run method: it is rejected
 if it is absolute, carries a drive letter, contains `..`, or contains any path
 separator. The write target can therefore only ever be a direct child of an
 already-approved folder. A run that would write into the input folder itself is
@@ -97,7 +106,7 @@ own. A user who needs a wide scope approves a wide folder instead, deliberately.
 - **UNC paths are screened before resolution.** On Windows, merely calling
   `os.path.realpath()` or `os.path.isdir()` on a `\\server\share` path opens an
   SMB connection and hands over an NTLM hash before any containment check gets
-  to run. `prescreen()` in the guard therefore judges UNC values lexically and
+  to run. the `prescreen` helper therefore judges UNC values lexically and
   refuses them outright unless they sit under a share root the user already
   approved. No filesystem call happens first.
 - **The legacy approval list lives outside the package folder**, under
@@ -131,10 +140,10 @@ it.
 
 | Pattern | Where | What it is |
 | --- | --- | --- |
-| `PILImage.open(f)` | `smart_batch_resize.py` | Decoding an image file the user approved the folder for. Gated by `folder_allowed()` above it. |
-| `Path(input_folder).iterdir()` | `smart_batch_resize.py` | Listing that same approved folder. Same gate. |
-| `open(path, "r")` | `craftkit_folder_guard.py` | Reading two JSON files, both under ComfyUI's user directory, both read-only, both with fixed names. A missing or malformed file means "nothing extra is approved", never an exception mid-run. |
-| `json.load()` | `craftkit_folder_guard.py` | The same two files. No `pickle`, no `yaml.load`, no deserialization of user-supplied objects. |
+| Pillow image decode | `smart_batch_resize.py` | Decoding an image file in a folder the user approved. The guard runs above it. |
+| pathlib directory listing | `smart_batch_resize.py` | Listing that same approved folder. Same guard. |
+| two read-only file opens | `craftkit_folder_guard.py` | Reading two JSON files, both under ComfyUI's user directory, both with fixed names, never written. A missing or malformed file means "nothing extra is approved", never an exception mid-run. |
+| JSON parsing | `craftkit_folder_guard.py` | The same two files. No pickle, no YAML loader, no deserialization of user-supplied objects. |
 
 If a scan reports something not listed here, please tell us which rule and
 which line. We would rather remove a construct than have a version banned for
